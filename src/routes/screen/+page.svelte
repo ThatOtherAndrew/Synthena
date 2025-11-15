@@ -8,21 +8,26 @@
 	let canvas: HTMLCanvasElement;
 	let connected = $state(false);
 
+	interface ParticleBurst {
+		x: number;
+		y: number;
+		startTime: number;
+	}
+
 	// Non-reactive variables for WebSocket and WebGL management
 	let ws: WebSocket | null = null;
 	let reconnectTimeout: number | null = null;
 	let isCleaningUp = false;
 	let gl: WebGLRenderingContext | null = null;
 	let program: WebGLProgram | null = null;
-	let flashIntensity = 0;
 	let animationFrameId: number | null = null;
 	let isAboveThreshold = false;
 	const FLASH_THRESHOLD = 20;
 	let audioContext: AudioContext | null = null;
 	let guitarStrumBuffer: AudioBuffer | null = null;
-	let particleTime = 0;
-	let particlePos = { x: 0.5, y: 0.5 };
-	let startTime = 0;
+	let particleBursts: ParticleBurst[] = [];
+	const MAX_BURSTS = 10;
+	const BURST_DURATION = 3000; // 3 seconds in milliseconds
 
 	function createShader(
 		gl: WebGLRenderingContext,
@@ -91,30 +96,43 @@
 	function render(timestamp: number) {
 		if (!gl || !program || isCleaningUp) return;
 
-		// Initialize start time on first frame
-		if (startTime === 0) startTime = timestamp;
+		// Remove expired bursts
+		particleBursts = particleBursts.filter(burst => timestamp - burst.startTime < BURST_DURATION);
 
-		// Update particle animation time
-		if (flashIntensity > 0) {
-			particleTime = (timestamp - startTime) * 0.001; // Convert to seconds
-		}
+		// Prepare burst data for shader
+		const burstPositions: number[] = [];
+		const burstTimes: number[] = [];
+		const burstIntensities: number[] = [];
 
-		// Update flash intensity (decay over time)
-		flashIntensity *= 0.99;
-		if (flashIntensity < 0.001) {
-			flashIntensity = 0;
-			particleTime = 0;
+		for (let i = 0; i < MAX_BURSTS; i++) {
+			if (i < particleBursts.length) {
+				const burst = particleBursts[i];
+				const age = (timestamp - burst.startTime) / 1000; // Convert to seconds
+				const intensity = Math.max(0, 1.0 - age / (BURST_DURATION / 1000));
+
+				burstPositions.push(burst.x, burst.y);
+				burstTimes.push(age);
+				burstIntensities.push(intensity);
+			} else {
+				// Fill unused slots with dummy data
+				burstPositions.push(0, 0);
+				burstTimes.push(0);
+				burstIntensities.push(0);
+			}
 		}
 
 		// Set uniforms
-		const flashLocation = gl.getUniformLocation(program, 'uFlash');
-		gl.uniform1f(flashLocation, flashIntensity);
+		const numBurstsLocation = gl.getUniformLocation(program, 'uNumBursts');
+		gl.uniform1i(numBurstsLocation, particleBursts.length);
 
-		const timeLocation = gl.getUniformLocation(program, 'uTime');
-		gl.uniform1f(timeLocation, particleTime);
+		const burstPositionsLocation = gl.getUniformLocation(program, 'uBurstPositions');
+		gl.uniform2fv(burstPositionsLocation, burstPositions);
 
-		const particlePosLocation = gl.getUniformLocation(program, 'uParticlePos');
-		gl.uniform2f(particlePosLocation, particlePos.x, particlePos.y);
+		const burstTimesLocation = gl.getUniformLocation(program, 'uBurstTimes');
+		gl.uniform1fv(burstTimesLocation, burstTimes);
+
+		const burstIntensitiesLocation = gl.getUniformLocation(program, 'uBurstIntensities');
+		gl.uniform1fv(burstIntensitiesLocation, burstIntensities);
 
 		const resolutionLocation = gl.getUniformLocation(program, 'uResolution');
 		gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
@@ -129,16 +147,20 @@
 	}
 
 	function triggerFlash() {
-		flashIntensity = 1.0;
-		particleTime = 0;
-		startTime = 0; // Reset start time for new animation
-
-		// Set random particle position on screen
+		// Add new burst at random position
 		if (canvas) {
-			particlePos = {
+			const newBurst: ParticleBurst = {
 				x: Math.random() * canvas.width,
-				y: Math.random() * canvas.height
+				y: Math.random() * canvas.height,
+				startTime: performance.now()
 			};
+
+			particleBursts.push(newBurst);
+
+			// Limit number of simultaneous bursts
+			if (particleBursts.length > MAX_BURSTS) {
+				particleBursts.shift(); // Remove oldest burst
+			}
 		}
 
 		playGuitarStrum();

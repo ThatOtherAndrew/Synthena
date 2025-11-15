@@ -1,9 +1,10 @@
 precision mediump float;
 
-uniform float uTime;
 uniform vec2 uResolution;
-uniform vec2 uParticlePos;
-uniform float uFlash;
+uniform int uNumBursts;
+uniform vec2 uBurstPositions[10];
+uniform float uBurstTimes[10];
+uniform float uBurstIntensities[10];
 
 // Random function
 float random(vec2 st) {
@@ -19,60 +20,66 @@ vec3 hsv2rgb(vec3 c) {
 
 void main() {
 	vec2 uv = gl_FragCoord.xy / uResolution;
-	vec2 particleUv = uParticlePos / uResolution;
 
 	// Correct for aspect ratio to prevent stretching
 	float aspect = uResolution.x / uResolution.y;
 	uv.x *= aspect;
-	particleUv.x *= aspect;
 
 	vec3 color = vec3(0.0);
-	float intensity = 0.0;
 
-	if (uFlash > 0.01) {
-		// Number of particles
-		const int numParticles = 50;
+	// Render each active burst
+	for (int burstIdx = 0; burstIdx < 10; burstIdx++) {
+		if (burstIdx >= uNumBursts) break;
 
-		for (int i = 0; i < numParticles; i++) {
-			float fi = float(i);
+		vec2 burstPos = uBurstPositions[burstIdx] / uResolution;
+		burstPos.x *= aspect;
+		float burstTime = uBurstTimes[burstIdx];
+		float burstIntensity = uBurstIntensities[burstIdx];
 
-			// Evenly distribute angles around the circle, with slight randomization
-			float baseAngle = (fi / float(numParticles)) * 6.28318;
-			float angleVariation = (random(vec2(fi * 12.345, fi * 67.890)) - 0.5) * 0.3;
-			float angle = baseAngle + angleVariation;
-			float speed = 0.3 + random(vec2(fi * 23.456, fi * 89.012)) * 0.5;
+		if (burstIntensity > 0.01) {
+			// Number of particles per burst
+			const int numParticles = 50;
 
-			// Particle position over time
-			vec2 dir = vec2(cos(angle), sin(angle));
-			float t = uTime * speed;
-			vec2 particleOffset = dir * t * uFlash;
-			vec2 particleWorldPos = particleUv + particleOffset;
+			for (int i = 0; i < numParticles; i++) {
+				float fi = float(i);
 
-			// Distance from current pixel to particle
-			float dist = length(uv - particleWorldPos);
+				// Evenly distribute angles around the circle, with slight randomization
+				float baseAngle = (fi / float(numParticles)) * 6.28318;
+				float angleVariation = (random(vec2(fi * 12.345, fi * 67.890)) - 0.5) * 0.3;
+				float angle = baseAngle + angleVariation;
+				float speed = 0.3 + random(vec2(fi * 23.456, fi * 89.012)) * 0.5;
 
-			// Particle size decreases over time
-			float size = 0.02 * (1.0 - t * 0.5) * uFlash;
+				// Particle position over time
+				vec2 dir = vec2(cos(angle), sin(angle));
+				float t = burstTime * speed;
+				vec2 particleOffset = dir * t * burstIntensity;
+				vec2 particleWorldPos = burstPos + particleOffset;
 
-			// Particle intensity (gaussian-like falloff)
-			float particleIntensity = exp(-dist * dist / (size * size * 0.5));
+				// Distance from current pixel to particle
+				float dist = length(uv - particleWorldPos);
 
-			// Color based on angle (rainbow effect)
-			float hue = angle / 6.28318;
-			vec3 particleColor = hsv2rgb(vec3(hue, 0.8, 1.0));
+				// Particle size decreases over time
+				float size = 0.02 * (1.0 - t * 0.5) * burstIntensity;
 
-			// Fade out over time
-			float fade = (1.0 - t) * uFlash;
-			particleIntensity *= fade;
+				// Particle intensity (gaussian-like falloff)
+				float particleIntensity = exp(-dist * dist / (size * size * 0.5));
 
-			color += particleColor * particleIntensity;
-			intensity += particleIntensity;
+				// Color based on angle (rainbow effect)
+				float hue = angle / 6.28318;
+				vec3 particleColor = hsv2rgb(vec3(hue, 0.8, 1.0));
+
+				// Fade out over time
+				float fade = (1.0 - t) * burstIntensity;
+				particleIntensity *= fade;
+
+				color += particleColor * particleIntensity;
+			}
+
+			// Add a central glow
+			vec2 centerDist = uv - burstPos;
+			float centerGlow = exp(-length(centerDist) * 15.0) * burstIntensity;
+			color += vec3(1.0) * centerGlow;
 		}
-
-		// Add a central glow
-		vec2 centerDist = uv - particleUv;
-		float centerGlow = exp(-length(centerDist) * 15.0) * uFlash;
-		color += vec3(1.0) * centerGlow;
 	}
 
 	gl_FragColor = vec4(color, 1.0);
