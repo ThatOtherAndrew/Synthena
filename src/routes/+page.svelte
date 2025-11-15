@@ -13,14 +13,27 @@
 	let error = $state<string | null>(null);
 	let connected = $state(false);
 
+	interface AccelSample {
+		x: number;
+		y: number;
+		z: number;
+		timestamp: number;
+	}
+
 	// Non-reactive variables for WebSocket management
 	let ws: WebSocket | null = null;
 	let deviceId = '';
 	let heartbeatInterval: number | null = null;
 	let reconnectTimeout: number | null = null;
 	let isCleaningUp = false;
-	let lastAccelerometerSend = 0;
-	const ACCELEROMETER_THROTTLE = 50; // Send at most every 50ms (20 times per second)
+
+	// Strum detection variables
+	let accelHistory: AccelSample[] = [];
+	const HISTORY_SIZE = 10; // Keep last 10 samples
+	let lastStrumTime = 0;
+	const STRUM_DEBOUNCE = 300; // Minimum 300ms between strums
+	const JERK_THRESHOLD = 100; // Threshold for jerk magnitude
+	const MIN_MOTION_MAGNITUDE = 20; // Minimum acceleration magnitude
 
 	// Generate or retrieve device ID
 	function getDeviceId(): string {
@@ -101,7 +114,7 @@
 		}
 	}
 
-	// Send periodic heartbeats
+	// Send periodic heartbeats every 500ms
 	function startHeartbeat() {
 		if (heartbeatInterval) clearInterval(heartbeatInterval);
 
@@ -109,7 +122,7 @@
 			if (ws && ws.readyState === WebSocket.OPEN && deviceId) {
 				ws.send(JSON.stringify({ type: 'heartbeat', deviceId }));
 			}
-		}, 5000);
+		}, 500);
 	}
 
 	// Initialize on mount
@@ -169,24 +182,89 @@
 		window.addEventListener('devicemotion', handleMotion);
 	}
 
+	function detectStrum(): boolean {
+		if (accelHistory.length < 3) return false;
+
+		const now = Date.now();
+
+		// Debounce: don't trigger if we just detected a strum
+		if (now - lastStrumTime < STRUM_DEBOUNCE) return false;
+
+		// Get the last 3 samples for jerk calculation
+		const current = accelHistory[accelHistory.length - 1];
+		const previous = accelHistory[accelHistory.length - 2];
+		const beforePrevious = accelHistory[accelHistory.length - 3];
+
+		// Calculate time deltas
+		const dt1 = (current.timestamp - previous.timestamp) / 1000; // Convert to seconds
+		const dt2 = (previous.timestamp - beforePrevious.timestamp) / 1000;
+
+		if (dt1 === 0 || dt2 === 0) return false;
+
+		// Calculate acceleration deltas (jerk = da/dt)
+		const jerkX = (current.x - previous.x) / dt1 - (previous.x - beforePrevious.x) / dt2;
+		const jerkY = (current.y - previous.y) / dt1 - (previous.y - beforePrevious.y) / dt2;
+		const jerkZ = (current.z - previous.z) / dt1 - (previous.z - beforePrevious.z) / dt2;
+
+		// Calculate jerk magnitude
+		const jerkMagnitude = Math.sqrt(jerkX * jerkX + jerkY * jerkY + jerkZ * jerkZ);
+
+		// Calculate current acceleration magnitude
+		const accelMagnitude = Math.sqrt(
+			current.x * current.x + current.y * current.y + current.z * current.z
+		);
+
+		// Detect strum: high jerk (sudden change) with sufficient motion
+		if (jerkMagnitude > JERK_THRESHOLD && accelMagnitude > MIN_MOTION_MAGNITUDE) {
+			// Additional validation: check for dominant axis motion
+			// Strums typically have strong motion in one or two axes
+			const maxAxisAccel = Math.max(Math.abs(current.x), Math.abs(current.y), Math.abs(current.z));
+			const motionConcentration = maxAxisAccel / accelMagnitude;
+
+			// If motion is concentrated in one axis (> 60%), it's likely a deliberate strum
+			if (motionConcentration > 0.6) {
+				lastStrumTime = now;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	function handleMotion(event: DeviceMotionEvent) {
 		const acc = event.accelerationIncludingGravity;
-		if (acc) {
+		if (acc && acc.x !== null && acc.y !== null && acc.z !== null) {
+			// Update local display
 			acceleration = {
 				x: acc.x,
 				y: acc.y,
 				z: acc.z
 			};
 
-			// Send accelerometer data via WebSocket (throttled)
-			const now = Date.now();
-			if (ws && ws.readyState === WebSocket.OPEN && deviceId && now - lastAccelerometerSend >= ACCELEROMETER_THROTTLE) {
-				lastAccelerometerSend = now;
-				ws.send(JSON.stringify({
-					type: 'accelerometer',
-					deviceId,
-					data: acceleration
-				}));
+			// Add to history for strum detection
+			accelHistory.push({
+				x: acc.x,
+				y: acc.y,
+				z: acc.z,
+				timestamp: Date.now()
+			});
+
+			// Keep history at fixed size
+			if (accelHistory.length > HISTORY_SIZE) {
+				accelHistory.shift();
+			}
+
+			// Detect strum and send event immediately
+			if (detectStrum()) {
+				if (ws && ws.readyState === WebSocket.OPEN && deviceId) {
+					ws.send(
+						JSON.stringify({
+							type: 'strum',
+							deviceId,
+							intensity: Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z)
+						})
+					);
+				}
 			}
 		}
 	}

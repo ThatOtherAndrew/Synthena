@@ -21,13 +21,13 @@
 	let gl: WebGLRenderingContext | null = null;
 	let program: WebGLProgram | null = null;
 	let animationFrameId: number | null = null;
-	let isAboveThreshold = false;
-	const FLASH_THRESHOLD = 20;
 	let audioContext: AudioContext | null = null;
 	let guitarStrumBuffer: AudioBuffer | null = null;
 	let particleBursts: ParticleBurst[] = [];
 	const MAX_BURSTS = 10;
 	const BURST_DURATION = 3000; // 3 seconds in milliseconds
+	let lastTriggerTime = 0;
+	const TRIGGER_DEBOUNCE = 100; // Minimum 100ms between any triggers
 
 	function createShader(
 		gl: WebGLRenderingContext,
@@ -147,12 +147,20 @@
 	}
 
 	function triggerFlash() {
+		const now = performance.now();
+
+		// Global debounce to prevent double-triggering from multiple sources
+		if (now - lastTriggerTime < TRIGGER_DEBOUNCE) {
+			return;
+		}
+		lastTriggerTime = now;
+
 		// Add new burst at random position
 		if (canvas) {
 			const newBurst: ParticleBurst = {
 				x: Math.random() * canvas.width,
 				y: Math.random() * canvas.height,
-				startTime: performance.now()
+				startTime: now
 			};
 
 			particleBursts.push(newBurst);
@@ -221,24 +229,15 @@
 			ws.onmessage = (event) => {
 				try {
 					const message = JSON.parse(event.data);
-					if (message.type === 'heartbeat_event') {
-						triggerFlash();
-					} else if (message.type === 'accelerometer_data') {
-						// Check if magnitude peaks over threshold with hysteresis
-						const data = message.data;
-						if (data) {
-							const magnitude = Math.sqrt(
-								(data.x || 0) ** 2 + (data.y || 0) ** 2 + (data.z || 0) ** 2
-							);
 
-							// Only trigger flash when crossing threshold from below
-							if (magnitude > FLASH_THRESHOLD && !isAboveThreshold) {
-								isAboveThreshold = true;
-								triggerFlash();
-							} else if (magnitude <= FLASH_THRESHOLD) {
-								isAboveThreshold = false;
-							}
-						}
+					switch (message.type) {
+						case 'strum_event':
+							triggerFlash();
+							break;
+
+						default:
+							// Ignore unknown message types (including heartbeat_event)
+							break;
 					}
 				} catch (error) {
 					console.error('Error parsing WebSocket message:', error);

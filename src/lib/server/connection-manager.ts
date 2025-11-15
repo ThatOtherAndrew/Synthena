@@ -1,16 +1,9 @@
 import type { WebSocket } from 'ws';
 
-export interface AccelerometerData {
-	x: number | null;
-	y: number | null;
-	z: number | null;
-}
-
 export interface Device {
 	id: string;
 	connectedAt: number;
 	lastSeen: number;
-	accelerometer?: AccelerometerData;
 }
 
 interface DeviceConnection extends Device {
@@ -59,13 +52,11 @@ class ConnectionManager {
 		}
 	}
 
-	updateAccelerometer(deviceId: string, data: AccelerometerData): void {
+	handleStrum(deviceId: string, intensity: number): void {
 		const device = this.devices.get(deviceId);
 		if (device) {
-			device.accelerometer = data;
 			device.lastSeen = Date.now();
-			this.broadcastToDevices();
-			this.broadcastAccelerometerData(deviceId, data);
+			this.broadcastStrumEvent(deviceId, intensity);
 		}
 	}
 
@@ -115,11 +106,10 @@ class ConnectionManager {
 	}
 
 	private sendDeviceList(ws: WebSocket): void {
-		const devices: Device[] = Array.from(this.devices.values()).map(({ id, connectedAt, lastSeen, accelerometer }) => ({
+		const devices: Device[] = Array.from(this.devices.values()).map(({ id, connectedAt, lastSeen }) => ({
 			id,
 			connectedAt,
-			lastSeen,
-			accelerometer
+			lastSeen
 		}));
 
 		try {
@@ -149,18 +139,18 @@ class ConnectionManager {
 		}
 	}
 
-	private broadcastAccelerometerData(deviceId: string, data: AccelerometerData): void {
+	private broadcastStrumEvent(deviceId: string, intensity: number): void {
 		for (const screen of this.screens) {
 			try {
 				screen.send(
 					JSON.stringify({
-						type: 'accelerometer_data',
+						type: 'strum_event',
 						deviceId,
-						data
+						intensity
 					})
 				);
 			} catch (error) {
-				console.error('Error sending accelerometer data:', error);
+				console.error('Error sending strum event:', error);
 			}
 		}
 	}

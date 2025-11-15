@@ -2,17 +2,10 @@
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 
-	interface AccelerometerData {
-		x: number | null;
-		y: number | null;
-		z: number | null;
-	}
-
 	interface Device {
 		id: string;
 		connectedAt: number;
 		lastSeen: number;
-		accelerometer?: AccelerometerData;
 	}
 
 	let devices = $state<Device[]>([]);
@@ -173,25 +166,6 @@
 								<span class="info-value">{getTimeSinceLastSeen(device.lastSeen)}</span>
 							</div>
 						</div>
-						{#if device.accelerometer}
-							<div class="accelerometer">
-								<div class="accelerometer-title">Accelerometer</div>
-								<div class="accelerometer-data">
-									<div class="accel-axis">
-										<span class="accel-label">X:</span>
-										<span class="accel-value">{device.accelerometer.x?.toFixed(2) ?? '---'}</span>
-									</div>
-									<div class="accel-axis">
-										<span class="accel-label">Y:</span>
-										<span class="accel-value">{device.accelerometer.y?.toFixed(2) ?? '---'}</span>
-									</div>
-									<div class="accel-axis">
-										<span class="accel-label">Z:</span>
-										<span class="accel-value">{device.accelerometer.z?.toFixed(2) ?? '---'}</span>
-									</div>
-								</div>
-							</div>
-						{/if}
 					</div>
 				{/each}
 			</div>
@@ -344,49 +318,6 @@
 	.info-value {
 		color: #fff;
 		font-weight: bold;
-	}
-
-	.accelerometer {
-		margin-top: 1rem;
-		padding-top: 1rem;
-		border-top: 1px solid #333;
-	}
-
-	.accelerometer-title {
-		font-size: 0.9rem;
-		color: #999;
-		margin-bottom: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.accelerometer-data {
-		display: flex;
-		gap: 1.5rem;
-		justify-content: space-around;
-	}
-
-	.accel-axis {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.25rem;
-	}
-
-	.accel-label {
-		color: #999;
-		font-size: 0.85rem;
-		font-weight: bold;
-	}
-
-	.accel-value {
-		color: #4ade80;
-		font-size: 1.25rem;
-		font-weight: bold;
-		font-variant-numeric: tabular-nums;
-		width: 7ch;
-		text-align: center;
-		display: inline-block;
 	}
 
 	@media (max-width: 768px) {

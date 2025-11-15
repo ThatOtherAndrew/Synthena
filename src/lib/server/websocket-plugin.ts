@@ -56,9 +56,10 @@ export function webSocketPlugin(): Plugin {
 								console.log('Screen connected');
 								break;
 
-							case 'accelerometer':
-								if (message.deviceId && message.data) {
-									connectionManager.updateAccelerometer(message.deviceId, message.data);
+							case 'strum':
+								if (message.deviceId) {
+									connectionManager.handleStrum(message.deviceId, message.intensity || 1.0);
+									console.log(`Strum detected from ${message.deviceId}`);
 								}
 								break;
 						}
