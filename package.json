@@ -32,5 +32,9 @@
 		"typescript-eslint": "^8.46.1",
 		"vite": "^7.1.10",
 		"vite-plugin-devtools-json": "^1.0.0"
+	},
+	"dependencies": {
+		"@types/ws": "^8.18.1",
+		"ws": "^8.18.3"
 	}
 }
