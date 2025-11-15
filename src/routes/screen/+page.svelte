@@ -20,6 +20,9 @@
 	const FLASH_THRESHOLD = 20;
 	let audioContext: AudioContext | null = null;
 	let guitarStrumBuffer: AudioBuffer | null = null;
+	let particleTime = 0;
+	let particlePos = { x: 0.5, y: 0.5 };
+	let startTime = 0;
 
 	function createShader(
 		gl: WebGLRenderingContext,
@@ -82,19 +85,36 @@
 		gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
 		// Start render loop
-		render();
+		animationFrameId = requestAnimationFrame(render);
 	}
 
-	function render() {
+	function render(timestamp: number) {
 		if (!gl || !program || isCleaningUp) return;
 
+		// Initialize start time on first frame
+		if (startTime === 0) startTime = timestamp;
+
+		// Update particle animation time
+		if (flashIntensity > 0) {
+			particleTime = (timestamp - startTime) * 0.001; // Convert to seconds
+		}
+
 		// Update flash intensity (decay over time)
-		flashIntensity *= 0.92;
-		if (flashIntensity < 0.001) flashIntensity = 0;
+		flashIntensity *= 0.99;
+		if (flashIntensity < 0.001) {
+			flashIntensity = 0;
+			particleTime = 0;
+		}
 
 		// Set uniforms
 		const flashLocation = gl.getUniformLocation(program, 'uFlash');
 		gl.uniform1f(flashLocation, flashIntensity);
+
+		const timeLocation = gl.getUniformLocation(program, 'uTime');
+		gl.uniform1f(timeLocation, particleTime);
+
+		const particlePosLocation = gl.getUniformLocation(program, 'uParticlePos');
+		gl.uniform2f(particlePosLocation, particlePos.x, particlePos.y);
 
 		const resolutionLocation = gl.getUniformLocation(program, 'uResolution');
 		gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
@@ -110,6 +130,17 @@
 
 	function triggerFlash() {
 		flashIntensity = 1.0;
+		particleTime = 0;
+		startTime = 0; // Reset start time for new animation
+
+		// Set random particle position on screen
+		if (canvas) {
+			particlePos = {
+				x: Math.random() * canvas.width,
+				y: Math.random() * canvas.height
+			};
+		}
+
 		playGuitarStrum();
 	}
 
