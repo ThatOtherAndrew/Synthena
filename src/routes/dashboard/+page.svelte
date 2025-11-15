@@ -10,6 +10,7 @@
 
 	let devices = $state<Device[]>([]);
 	let connected = $state(false);
+	let currentTime = $state(Date.now());
 
 	// Non-reactive variables for WebSocket management
 	let ws: WebSocket | null = null;
@@ -71,10 +72,9 @@
 	onMount(() => {
 		connectWebSocket();
 
-		// Update display every second for live durations
+		// Update current time every second to trigger reactive re-renders
 		updateInterval = window.setInterval(() => {
-			// Force re-render by creating new array reference
-			devices = [...devices];
+			currentTime = Date.now();
 		}, 1000);
 
 		return () => {
@@ -103,7 +103,7 @@
 	}
 
 	function getConnectionDuration(connectedAt: number): string {
-		const duration = Date.now() - connectedAt;
+		const duration = currentTime - connectedAt;
 		const seconds = Math.floor(duration / 1000);
 		const minutes = Math.floor(seconds / 60);
 		const hours = Math.floor(minutes / 60);
@@ -114,7 +114,7 @@
 	}
 
 	function getTimeSinceLastSeen(lastSeen: number): string {
-		const duration = Date.now() - lastSeen;
+		const duration = currentTime - lastSeen;
 		const seconds = Math.floor(duration / 1000);
 
 		if (seconds < 1) return 'just now';

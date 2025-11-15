@@ -46,6 +46,7 @@ class ConnectionManager {
 		const device = this.devices.get(deviceId);
 		if (device) {
 			device.lastSeen = Date.now();
+			this.broadcastToDevices();
 		}
 	}
 
