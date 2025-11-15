@@ -57,7 +57,9 @@ export function webSocketPlugin(): Plugin {
 								break;
 
 							case 'accelerometer':
-								// Handle accelerometer data (for future use)
+								if (message.deviceId && message.data) {
+									connectionManager.updateAccelerometer(message.deviceId, message.data);
+								}
 								break;
 						}
 					} catch (error) {

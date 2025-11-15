@@ -1,9 +1,16 @@
 import type { WebSocket } from 'ws';
 
+export interface AccelerometerData {
+	x: number | null;
+	y: number | null;
+	z: number | null;
+}
+
 export interface Device {
 	id: string;
 	connectedAt: number;
 	lastSeen: number;
+	accelerometer?: AccelerometerData;
 }
 
 interface DeviceConnection extends Device {
@@ -49,6 +56,15 @@ class ConnectionManager {
 			device.lastSeen = Date.now();
 			this.broadcastToDevices();
 			this.broadcastHeartbeatEvent(deviceId);
+		}
+	}
+
+	updateAccelerometer(deviceId: string, data: AccelerometerData): void {
+		const device = this.devices.get(deviceId);
+		if (device) {
+			device.accelerometer = data;
+			device.lastSeen = Date.now();
+			this.broadcastToDevices();
 		}
 	}
 
@@ -98,10 +114,11 @@ class ConnectionManager {
 	}
 
 	private sendDeviceList(ws: WebSocket): void {
-		const devices: Device[] = Array.from(this.devices.values()).map(({ id, connectedAt, lastSeen }) => ({
+		const devices: Device[] = Array.from(this.devices.values()).map(({ id, connectedAt, lastSeen, accelerometer }) => ({
 			id,
 			connectedAt,
-			lastSeen
+			lastSeen,
+			accelerometer
 		}));
 
 		try {
