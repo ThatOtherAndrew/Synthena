@@ -26,7 +26,34 @@
 
 		let id = localStorage.getItem('deviceId');
 		if (!id) {
-			id = `device-${Math.random().toString(36).substring(2, 11)}-${Date.now()}`;
+			// Get device info
+			const ua = navigator.userAgent;
+			const platform = navigator.platform;
+
+			// Try to determine device type
+			let deviceType = 'desktop';
+			if (/Mobile|Android|iPhone|iPad|iPod/i.test(ua)) {
+				if (/iPad|Tablet/i.test(ua)) {
+					deviceType = 'tablet';
+				} else if (/iPhone/i.test(ua)) {
+					deviceType = 'iphone';
+				} else if (/Android/i.test(ua)) {
+					deviceType = 'android';
+				} else {
+					deviceType = 'mobile';
+				}
+			} else if (/Mac/i.test(platform)) {
+				deviceType = 'mac';
+			} else if (/Win/i.test(platform)) {
+				deviceType = 'windows';
+			} else if (/Linux/i.test(platform)) {
+				deviceType = 'linux';
+			}
+
+			// Generate unique suffix
+			const uniqueSuffix = Math.random().toString(36).substring(2, 9);
+
+			id = `${deviceType}-${uniqueSuffix}`;
 			localStorage.setItem('deviceId', id);
 		}
 		return id;
@@ -239,7 +266,7 @@
 
 	button {
 		background-color: #fff;
-		colour: #000;
+		color: #000;
 		border: none;
 		padding: 1rem 2rem;
 		font-size: 1rem;
