@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
+	import vertexShaderSource from './vertex.glsl?raw';
+	import fragmentShaderSource from './fragment.glsl?raw';
 
 	let canvas: HTMLCanvasElement;
 	let connected = $state(false);
@@ -13,27 +15,6 @@
 	let program: WebGLProgram | null = null;
 	let flashIntensity = 0;
 	let animationFrameId: number | null = null;
-
-	// Vertex shader (simple fullscreen quad)
-	const vertexShaderSource = `
-		attribute vec2 position;
-		void main() {
-			gl_Position = vec4(position, 0.0, 1.0);
-		}
-	`;
-
-	// Fragment shader (black background with flash effect)
-	const fragmentShaderSource = `
-		precision mediump float;
-		uniform float uFlash;
-		uniform vec2 uResolution;
-
-		void main() {
-			// Base colour is black, flash to white
-			vec3 colour = mix(vec3(0.0), vec3(1.0), uFlash);
-			gl_FragColor = vec4(colour, 1.0);
-		}
-	`;
 
 	function createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
 		const shader = gl.createShader(type);
