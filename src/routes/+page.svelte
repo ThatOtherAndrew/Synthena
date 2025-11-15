@@ -19,6 +19,8 @@
 	let heartbeatInterval: number | null = null;
 	let reconnectTimeout: number | null = null;
 	let isCleaningUp = false;
+	let lastAccelerometerSend = 0;
+	const ACCELEROMETER_THROTTLE = 50; // Send at most every 50ms (20 times per second)
 
 	// Generate or retrieve device ID
 	function getDeviceId(): string {
@@ -175,6 +177,17 @@
 				y: acc.y,
 				z: acc.z
 			};
+
+			// Send accelerometer data via WebSocket (throttled)
+			const now = Date.now();
+			if (ws && ws.readyState === WebSocket.OPEN && deviceId && now - lastAccelerometerSend >= ACCELEROMETER_THROTTLE) {
+				lastAccelerometerSend = now;
+				ws.send(JSON.stringify({
+					type: 'accelerometer',
+					deviceId,
+					data: acceleration
+				}));
+			}
 		}
 	}
 </script>
@@ -222,8 +235,8 @@
 		background-color: #000;
 		color: #fff;
 		display: flex;
-		align-items: centre;
-		justify-content: centre;
+		align-items: center;
+		justify-content: center;
 		font-family: monospace;
 		font-size: 1.5rem;
 	}
@@ -232,14 +245,14 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2rem;
-		text-align: centre;
+		text-align: center;
 	}
 
 	.axis {
 		display: flex;
 		gap: 1rem;
-		justify-content: centre;
-		align-items: centre;
+		justify-content: center;
+		align-items: center;
 	}
 
 	.label {
@@ -255,7 +268,7 @@
 
 	.permission,
 	.error {
-		text-align: centre;
+		text-align: center;
 		padding: 2rem;
 	}
 
