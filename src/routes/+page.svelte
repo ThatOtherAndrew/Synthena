@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	// import { log } from 'console';
+	// import { json } from 'stream/consumers';
 	import { onMount } from 'svelte';
 
 	interface AccelerationData {
@@ -7,6 +9,9 @@
 		y: number | null;
 		z: number | null;
 	}
+
+	const instruments = ["Guitar"]
+	var currInstrument = $state<string | null>(null);
 
 	let acceleration = $state<AccelerationData>({ x: null, y: null, z: null });
 	let permissionNeeded = $state(false);
@@ -109,6 +114,7 @@
 			if (ws && ws.readyState === WebSocket.OPEN && deviceId) {
 				ws.send(JSON.stringify({ type: 'heartbeat', deviceId }));
 			}
+			// assignInstrument();
 		}, 5000);
 	}
 
@@ -128,6 +134,8 @@
 		} else {
 			error = 'DeviceMotion API not supported';
 		}
+
+		// assignInstrument();
 
 		// Cleanup function
 		return () => {
@@ -165,6 +173,23 @@
 		}
 	}
 
+	function assignInstrument(e: SubmitEvent) {
+		if (ws && ws.readyState === WebSocket.OPEN && deviceId) {
+			let inputElem = document.getElementById("instrument-choice");
+			if (inputElem == null) { currInstrument = null; return}
+			currInstrument = inputElem.value;
+			console.log(`setting currinstrument awawa ${currInstrument}`)
+			ws.send(JSON.stringify({
+				type: "instrument",
+				deviceId,
+				data: currInstrument
+			}))
+		}
+		else {
+			error = "Websocket not open"
+		}
+	}
+	
 	function startListening() {
 		window.addEventListener('devicemotion', handleMotion);
 	}
@@ -196,13 +221,23 @@
 	<div class="status" class:connected>
 		{connected ? '●' : '○'}
 	</div>
-
 	{#if error}
 		<div class="error">{error}</div>
 	{:else if permissionNeeded}
 		<div class="permission">
 			<p>Accelerometer access required</p>
 			<button onclick={requestPermission}>Enable Accelerometer</button>
+		</div>
+	{:else if currInstrument==null}
+		<div class="instrument-choice">
+			<form onsubmit={assignInstrument}>
+				<label for="instrument">Choose an instrument to join in:</label>
+				<input list="instruments" name="instrument" id="instrument-choice">
+				<datalist id="instruments">
+					<option value="Guitar"></option>
+				</datalist>
+				<button type="submit">Join</button>
+			</form>
 		</div>
 	{:else}
 		<div class="data">
@@ -307,5 +342,12 @@
 
 	.status.connected {
 		color: #4ade80;
+	}
+
+	.instrument-choice {
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+	
 	}
 </style>

@@ -13,6 +13,7 @@
 		connectedAt: number;
 		lastSeen: number;
 		accelerometer?: AccelerometerData;
+		instrument?: string;
 	}
 
 	let devices = $state<Device[]>([]);
@@ -168,11 +169,17 @@
 								<span class="info-label">Duration:</span>
 								<span class="info-value">{getConnectionDuration(device.connectedAt)}</span>
 							</div>
-							<div class="info-item">
-								<span class="info-label">Last seen:</span>
-								<span class="info-value">{getTimeSinceLastSeen(device.lastSeen)}</span>
-							</div>
+						<div class="info-item">
+							<span class="info-label">Last seen:</span>
+							<span class="info-value">{getTimeSinceLastSeen(device.lastSeen)}</span>
 						</div>
+						<!-- {#if device.instrument} -->
+						<div class="info-item">
+							<span class="info-label">Instrument:</span>
+							<span class="info-value instrument">{device.instrument == null ? "N/A" : device.instrument}</span>
+						</div>
+						<!-- {/if} -->
+					</div>
 						{#if device.accelerometer}
 							<div class="accelerometer">
 								<div class="accelerometer-title">Accelerometer</div>
@@ -344,6 +351,11 @@
 	.info-value {
 		color: #fff;
 		font-weight: bold;
+	}
+
+	.info-value.instrument {
+		color: #4ade80;
+		text-transform: capitalize;
 	}
 
 	.accelerometer {

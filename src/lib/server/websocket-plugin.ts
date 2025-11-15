@@ -61,13 +61,18 @@ export function webSocketPlugin(): Plugin {
 									connectionManager.updateAccelerometer(message.deviceId, message.data);
 								}
 								break;
-						}
-					} catch (error) {
-						console.error('Error parsing WebSocket message:', error);
-					}
-				});
-
-				ws.on('close', () => {
+							
+							case 'instrument':
+								if (message.deviceId && message.data) {
+									connectionManager.updateInstrument(message.deviceId, message.data);
+								}
+								ws.send(JSON.stringify({ type: 'instrument_ack', status: 'received' }));
+								break;
+				}
+			} catch (error) {
+				console.error('Error parsing WebSocket message:', error);
+			}
+		});				ws.on('close', () => {
 					if (isDashboard) {
 						connectionManager.unregisterDashboard(ws);
 						console.log('Dashboard disconnected');

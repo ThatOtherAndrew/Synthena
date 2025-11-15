@@ -11,6 +11,7 @@ export interface Device {
 	connectedAt: number;
 	lastSeen: number;
 	accelerometer?: AccelerometerData;
+	instrument?: string;
 }
 
 interface DeviceConnection extends Device {
@@ -68,6 +69,16 @@ class ConnectionManager {
 		}
 	}
 
+	updateInstrument(deviceId: string, instrument: string): void {
+		const device = this.devices.get(deviceId);
+		if (device) {
+			device.instrument = instrument;
+			device.lastSeen = Date.now();
+			console.log(`Device ${deviceId} selected instrument: ${instrument}`);
+			this.broadcastToDevices();
+		}
+	}
+
 	removeDevice(deviceId: string): void {
 		this.devices.delete(deviceId);
 		this.broadcastToDevices();
@@ -114,11 +125,12 @@ class ConnectionManager {
 	}
 
 	private sendDeviceList(ws: WebSocket): void {
-		const devices: Device[] = Array.from(this.devices.values()).map(({ id, connectedAt, lastSeen, accelerometer }) => ({
+		const devices: Device[] = Array.from(this.devices.values()).map(({ id, connectedAt, lastSeen, accelerometer, instrument }) => ({
 			id,
 			connectedAt,
 			lastSeen,
-			accelerometer
+			accelerometer,
+			instrument
 		}));
 
 		try {
