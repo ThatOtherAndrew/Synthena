@@ -23,6 +23,7 @@ export function webSocketPlugin(): Plugin {
 			wss.on('connection', (ws) => {
 				let deviceId: string | null = null;
 				let isDashboard = false;
+				let isScreen = false;
 
 				ws.on('message', (data) => {
 					try {
@@ -49,6 +50,12 @@ export function webSocketPlugin(): Plugin {
 								console.log('Dashboard connected');
 								break;
 
+							case 'screen':
+								isScreen = true;
+								connectionManager.registerScreen(ws);
+								console.log('Screen connected');
+								break;
+
 							case 'accelerometer':
 								// Handle accelerometer data (for future use)
 								break;
@@ -62,6 +69,9 @@ export function webSocketPlugin(): Plugin {
 					if (isDashboard) {
 						connectionManager.unregisterDashboard(ws);
 						console.log('Dashboard disconnected');
+					} else if (isScreen) {
+						connectionManager.unregisterScreen(ws);
+						console.log('Screen disconnected');
 					} else if (deviceId) {
 						connectionManager.removeDevice(deviceId);
 						console.log(`Device disconnected: ${deviceId}`);

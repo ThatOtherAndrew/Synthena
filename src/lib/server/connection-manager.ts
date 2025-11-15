@@ -13,6 +13,7 @@ interface DeviceConnection extends Device {
 class ConnectionManager {
 	private devices = new Map<string, DeviceConnection>();
 	private dashboards = new Set<WebSocket>();
+	private screens = new Set<WebSocket>();
 	private heartbeatInterval: NodeJS.Timeout | null = null;
 	private readonly HEARTBEAT_TIMEOUT = 15000; // 15 seconds
 
@@ -47,6 +48,7 @@ class ConnectionManager {
 		if (device) {
 			device.lastSeen = Date.now();
 			this.broadcastToDevices();
+			this.broadcastHeartbeatEvent(deviceId);
 		}
 	}
 
@@ -63,6 +65,14 @@ class ConnectionManager {
 
 	unregisterDashboard(ws: WebSocket): void {
 		this.dashboards.delete(ws);
+	}
+
+	registerScreen(ws: WebSocket): void {
+		this.screens.add(ws);
+	}
+
+	unregisterScreen(ws: WebSocket): void {
+		this.screens.delete(ws);
 	}
 
 	private checkStaleConnections(): void {
@@ -103,6 +113,21 @@ class ConnectionManager {
 			);
 		} catch (error) {
 			console.error('Error sending device list:', error);
+		}
+	}
+
+	private broadcastHeartbeatEvent(deviceId: string): void {
+		for (const screen of this.screens) {
+			try {
+				screen.send(
+					JSON.stringify({
+						type: 'heartbeat_event',
+						deviceId
+					})
+				);
+			} catch (error) {
+				console.error('Error sending heartbeat event:', error);
+			}
 		}
 	}
 
