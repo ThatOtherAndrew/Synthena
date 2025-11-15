@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import vertexShaderSource from './vertex.glsl?raw';
 	import fragmentShaderSource from './fragment.glsl?raw';
+	import guitarStrumUrl from '$lib/assets/guitar_strum.ogg';
 
 	let canvas: HTMLCanvasElement;
 	let connected = $state(false);
@@ -15,8 +16,16 @@
 	let program: WebGLProgram | null = null;
 	let flashIntensity = 0;
 	let animationFrameId: number | null = null;
+	let isAboveThreshold = false;
+	const FLASH_THRESHOLD = 20;
+	let audioContext: AudioContext | null = null;
+	let guitarStrumBuffer: AudioBuffer | null = null;
 
-	function createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
+	function createShader(
+		gl: WebGLRenderingContext,
+		type: number,
+		source: string
+	): WebGLShader | null {
 		const shader = gl.createShader(type);
 		if (!shader) return null;
 
@@ -101,6 +110,30 @@
 
 	function triggerFlash() {
 		flashIntensity = 1.0;
+		playGuitarStrum();
+	}
+
+	function playGuitarStrum() {
+		if (!audioContext || !guitarStrumBuffer) return;
+
+		// Create a new source for each play (allows overlapping sounds)
+		const source = audioContext.createBufferSource();
+		source.buffer = guitarStrumBuffer;
+		source.connect(audioContext.destination);
+		source.start(0);
+	}
+
+	async function loadAudio() {
+		if (!browser) return;
+
+		try {
+			audioContext = new AudioContext();
+			const response = await fetch(guitarStrumUrl);
+			const arrayBuffer = await response.arrayBuffer();
+			guitarStrumBuffer = await audioContext.decodeAudioData(arrayBuffer);
+		} catch (error) {
+			console.error('Error loading audio:', error);
+		}
 	}
 
 	function resizeCanvas() {
@@ -137,6 +170,22 @@
 					const message = JSON.parse(event.data);
 					if (message.type === 'heartbeat_event') {
 						triggerFlash();
+					} else if (message.type === 'accelerometer_data') {
+						// Check if magnitude peaks over threshold with hysteresis
+						const data = message.data;
+						if (data) {
+							const magnitude = Math.sqrt(
+								(data.x || 0) ** 2 + (data.y || 0) ** 2 + (data.z || 0) ** 2
+							);
+
+							// Only trigger flash when crossing threshold from below
+							if (magnitude > FLASH_THRESHOLD && !isAboveThreshold) {
+								isAboveThreshold = true;
+								triggerFlash();
+							} else if (magnitude <= FLASH_THRESHOLD) {
+								isAboveThreshold = false;
+							}
+						}
 					}
 				} catch (error) {
 					console.error('Error parsing WebSocket message:', error);
@@ -162,6 +211,7 @@
 		resizeCanvas();
 		initWebGL();
 		connectWebSocket();
+		loadAudio();
 
 		window.addEventListener('resize', resizeCanvas);
 
@@ -183,6 +233,11 @@
 			if (ws) {
 				ws.close();
 				ws = null;
+			}
+
+			if (audioContext) {
+				audioContext.close();
+				audioContext = null;
 			}
 		};
 	});

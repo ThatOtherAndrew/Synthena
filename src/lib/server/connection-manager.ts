@@ -65,6 +65,7 @@ class ConnectionManager {
 			device.accelerometer = data;
 			device.lastSeen = Date.now();
 			this.broadcastToDevices();
+			this.broadcastAccelerometerData(deviceId, data);
 		}
 	}
 
@@ -144,6 +145,22 @@ class ConnectionManager {
 				);
 			} catch (error) {
 				console.error('Error sending heartbeat event:', error);
+			}
+		}
+	}
+
+	private broadcastAccelerometerData(deviceId: string, data: AccelerometerData): void {
+		for (const screen of this.screens) {
+			try {
+				screen.send(
+					JSON.stringify({
+						type: 'accelerometer_data',
+						deviceId,
+						data
+					})
+				);
+			} catch (error) {
+				console.error('Error sending accelerometer data:', error);
 			}
 		}
 	}
