@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import guitarIcon from '$lib/assets/guitar.png';
+	import vibraphoneIcon from '$lib/assets/vibraphone.png';
 	import Instrument from '$lib/components/Instrument.svelte';
 	import SettingsIcon from '$lib/components/SettingsIcon.svelte';
 	import { onMount } from 'svelte';
@@ -8,11 +10,11 @@
 	const INSTRUMENTS = [
 		{
 			name: 'Guitar',
-			emoji: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3b8.png'
+			icon: guitarIcon
 		},
 		{
 			name: 'Vibraphone',
-			emoji: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3b9.png'
+			icon: vibraphoneIcon
 		}
 	] as const;
 
@@ -362,7 +364,7 @@
 	{:else}
 		<Instrument
 			instrumentName={selectedInstrument.name}
-			imgUrl={selectedInstrument.emoji}
+			imgUrl={selectedInstrument.icon}
 			direction={cycleDirection}
 			onCycleLeft={() => cycleInstrument('left')}
 			onCycleRight={() => cycleInstrument('right')}

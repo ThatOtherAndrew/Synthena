@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
+	import logo from '$lib/assets/logo.png';
 
 	interface Device {
 		id: string;
@@ -126,7 +127,10 @@
 
 <div class="container">
 	<header>
-		<h1>Synthena Dashboard</h1>
+		<span class="logo-title">
+			<img src={logo} alt="Synthena Logo" width="40" height="40" />
+			<h1>Synthena Dashboard</h1>
+		</span>
 		<div class="status" class:connected>
 			{connected ? '● Connected' : '○ Disconnected'}
 		</div>
@@ -168,7 +172,14 @@
 							</div>
 							<div class="info-item">
 								<span class="info-label">Ping:</span>
-								<span class="info-value" class:good-ping={device.ping !== undefined && device.ping < 50} class:medium-ping={device.ping !== undefined && device.ping >= 50 && device.ping < 100} class:bad-ping={device.ping !== undefined && device.ping >= 100}>
+								<span
+									class="info-value"
+									class:good-ping={device.ping !== undefined && device.ping < 50}
+									class:medium-ping={device.ping !== undefined &&
+										device.ping >= 50 &&
+										device.ping < 100}
+									class:bad-ping={device.ping !== undefined && device.ping >= 100}
+								>
 									{device.ping !== undefined ? `${device.ping}ms` : '---'}
 								</span>
 							</div>
@@ -203,6 +214,15 @@
 		margin-bottom: 3rem;
 		padding-bottom: 1rem;
 		border-bottom: 2px solid #333;
+	}
+
+	.logo-title {
+		display: flex;
+		gap: 1rem;
+	}
+
+	.logo-title img {
+		transform: translateY(-5px);
 	}
 
 	h1 {
