@@ -5,7 +5,7 @@ export class VibraphoneParticles implements ParticleEffectFactory {
 
 	// Vibraphone-specific particle configuration
 	private readonly PARTICLE_COUNT = 30; // Optimized particle count
-	private readonly EFFECT_DURATION = 4000; // Longer sustain than guitar (4 seconds)
+	private readonly EFFECT_DURATION = 2667; // ~2.7 seconds
 
 	// Vibraphone visual style: cyan/blue shimmer
 	private readonly style: ParticleStyle = {

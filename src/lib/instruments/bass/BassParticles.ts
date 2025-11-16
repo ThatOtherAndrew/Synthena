@@ -5,7 +5,7 @@ export class BassParticles implements ParticleEffectFactory {
 
 	// Bass-specific particle configuration
 	private readonly PARTICLE_COUNT = 30;
-	private readonly EFFECT_DURATION = 3500; // Slightly longer sustain than guitar
+	private readonly EFFECT_DURATION = 2333; // ~2.3 seconds
 
 	// Bass visual style: deep purple/magenta burst
 	private readonly style: ParticleStyle = {

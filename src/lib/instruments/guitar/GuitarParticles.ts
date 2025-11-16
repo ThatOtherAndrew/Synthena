@@ -5,7 +5,7 @@ export class GuitarParticles implements ParticleEffectFactory {
 
 	// Guitar-specific particle configuration
 	private readonly PARTICLE_COUNT = 30;
-	private readonly EFFECT_DURATION = 3000; // 3 seconds
+	private readonly EFFECT_DURATION = 2000; // 2 seconds
 
 	// Guitar visual style: vibrant rainbow burst
 	private readonly style: ParticleStyle = {

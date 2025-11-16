@@ -3,15 +3,15 @@ precision highp float;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform int uNumEffects;
-uniform vec2 uEffectPositions[10];
-uniform float uEffectTimes[10];
-uniform float uEffectIntensities[10];
-uniform float uEffectHueOffsets[10];
-uniform float uEffectSaturations[10];
-uniform float uEffectSizeMultipliers[10];
-uniform float uEffectGlowIntensities[10];
-uniform float uEffectRainbow[10]; // 1.0 for rainbow, 0.0 for single colour
-uniform float uEffectSeeds[10]; // Random seed per effect for variation
+uniform vec2 uEffectPositions[30];
+uniform float uEffectTimes[30];
+uniform float uEffectIntensities[30];
+uniform float uEffectHueOffsets[30];
+uniform float uEffectSaturations[30];
+uniform float uEffectSizeMultipliers[30];
+uniform float uEffectGlowIntensities[30];
+uniform float uEffectRainbow[30]; // 1.0 for rainbow, 0.0 for single colour
+uniform float uEffectSeeds[30]; // Random seed per effect for variation
 
 // Random function
 float random(vec2 st) {
@@ -44,7 +44,7 @@ void main() {
     vec3 color = mix(bgColor1, bgColor2, gradient);
 
     // Render each active effect from all instruments
-    for (int effectIdx = 0; effectIdx < 10; effectIdx++) {
+    for (int effectIdx = 0; effectIdx < 30; effectIdx++) {
         if (effectIdx >= uNumEffects) break;
 
         vec2 effectPos = uEffectPositions[effectIdx] / uResolution;
@@ -70,7 +70,7 @@ void main() {
                 float baseAngle = (fi / float(numParticles)) * 6.28318;
                 float angleVariation = (random(vec2(fi * 12.345 + seed, fi * 67.890 + seed)) - 0.5) * 0.3;
                 float angle = baseAngle + angleVariation;
-                float speed = 0.15 + random(vec2(fi * 23.456 + seed, fi * 89.012 + seed)) * 0.25;
+                float speed = 0.225 + random(vec2(fi * 23.456 + seed, fi * 89.012 + seed)) * 0.375; // 1.5x faster
 
                 // Particle position over time
                 vec2 dir = vec2(cos(angle), sin(angle));
@@ -96,8 +96,13 @@ void main() {
                 float hue = mix(hueOffset, mod(angleHue + hueOffset, 1.0), rainbow);
                 vec3 particleColor = hsv2rgb(vec3(hue, saturation, 1.0));
 
-                // Fade out over time
+                // Fade out over time (cubic falloff for faster culling)
                 float fade = (1.0 - t) * effectIntensity;
+                fade = fade * fade * fade;
+
+                // Cull particles that are too faded
+                if (fade < 0.01) continue;
+
                 particleIntensity *= fade;
 
                 color += particleColor * particleIntensity;

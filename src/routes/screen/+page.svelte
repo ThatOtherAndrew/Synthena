@@ -99,7 +99,7 @@
 		}
 
 		// Prepare effect data for shader (support unlimited effects, but shader has max)
-		const MAX_SHADER_EFFECTS = 10;
+		const MAX_SHADER_EFFECTS = 30; // Increased limit for multiple devices
 		const effectPositions: number[] = [];
 		const effectTimes: number[] = [];
 		const effectIntensities: number[] = [];
@@ -186,14 +186,6 @@
 	}
 
 	function triggerInstrument(instrumentName: string) {
-		const now = performance.now();
-
-		// Global debounce to prevent double-triggering from multiple sources
-		if (now - lastTriggerTime < TRIGGER_DEBOUNCE) {
-			return;
-		}
-		lastTriggerTime = now;
-
 		// Trigger specific instrument at random position
 		const instrument = instruments.get(instrumentName);
 
@@ -203,6 +195,7 @@
 				y: Math.random() * canvas.height
 			};
 			// Pass current held MIDI notes to instrument
+			// Audio always plays, particles may be limited by shader capacity
 			instrument.trigger(position, undefined, heldNotes);
 		}
 	}
