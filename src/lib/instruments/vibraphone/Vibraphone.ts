@@ -1,7 +1,7 @@
 import type { Instrument } from '../Instrument';
 import type { ParticleEffect } from '../ParticleEffect';
 import { VibraphoneParticles } from './VibraphoneParticles';
-import vibraphoneUrl from './vibraphone.ogg';
+import vibraphoneUrl from './vibraphone.wav';
 
 /**
  * Vibraphone instrument implementation.
