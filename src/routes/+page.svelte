@@ -24,6 +24,7 @@
 
 	let currentInstrumentIndex = $state(0);
 	let selectedInstrument = $derived(INSTRUMENTS[currentInstrumentIndex]);
+	let cycleDirection = $state<'left' | 'right'>('right');
 
 	let acceleration = $state<AccelerationData>({ x: null, y: null, z: null });
 	let permissionNeeded = $state(false);
@@ -31,6 +32,7 @@
 	let connected = $state(false);
 
 	function cycleInstrument(direction: 'left' | 'right') {
+		cycleDirection = direction;
 		if (direction === 'left') {
 			currentInstrumentIndex =
 				(currentInstrumentIndex - 1 + INSTRUMENTS.length) % INSTRUMENTS.length;
@@ -375,6 +377,7 @@
 		<Instrument
 			instrumentName={selectedInstrument.name}
 			imgUrl={selectedInstrument.emoji}
+			direction={cycleDirection}
 			onCycleLeft={() => cycleInstrument('left')}
 			onCycleRight={() => cycleInstrument('right')}
 		/>
