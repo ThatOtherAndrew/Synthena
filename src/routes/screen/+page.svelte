@@ -3,16 +3,11 @@
 	import { onMount } from 'svelte';
 	import vertexShaderSource from './vertex.glsl?raw';
 	import fragmentShaderSource from './fragment.glsl?raw';
-	import guitarStrumUrl from '$lib/assets/guitar_strum.ogg';
+	import { Guitar } from '$lib/instruments/guitar/Guitar';
+	import type { Instrument } from '$lib/instruments/Instrument';
 
 	let canvas: HTMLCanvasElement;
 	let connected = $state(false);
-
-	interface ParticleBurst {
-		x: number;
-		y: number;
-		startTime: number;
-	}
 
 	// Non-reactive variables for WebSocket and WebGL management
 	let ws: WebSocket | null = null;
@@ -21,11 +16,7 @@
 	let gl: WebGLRenderingContext | null = null;
 	let program: WebGLProgram | null = null;
 	let animationFrameId: number | null = null;
-	let audioContext: AudioContext | null = null;
-	let guitarStrumBuffer: AudioBuffer | null = null;
-	let particleBursts: ParticleBurst[] = [];
-	const MAX_BURSTS = 10;
-	const BURST_DURATION = 3000; // 3 seconds in milliseconds
+	let instrument: Instrument | null = null;
 	let lastTriggerTime = 0;
 	const TRIGGER_DEBOUNCE = 100; // Minimum 100ms between any triggers
 
@@ -52,7 +43,7 @@
 	function initWebGL() {
 		if (!canvas) return;
 
-		gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+		gl = (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
 		if (!gl) {
 			console.error('WebGL not supported');
 			return;
@@ -96,43 +87,53 @@
 	function render(timestamp: number) {
 		if (!gl || !program || isCleaningUp) return;
 
-		// Remove expired bursts
-		particleBursts = particleBursts.filter(burst => timestamp - burst.startTime < BURST_DURATION);
+		// Get all active effects from all instruments
+		const allEffects = instrument ? instrument.getActiveEffects(timestamp) : [];
 
-		// Prepare burst data for shader
-		const burstPositions: number[] = [];
-		const burstTimes: number[] = [];
-		const burstIntensities: number[] = [];
+		// Prepare effect data for shader (support unlimited effects, but shader has max)
+		const MAX_SHADER_EFFECTS = 10;
+		const effectPositions: number[] = [];
+		const effectTimes: number[] = [];
+		const effectIntensities: number[] = [];
+		const effectHueOffsets: number[] = [];
+		const effectParticleCounts: number[] = [];
 
-		for (let i = 0; i < MAX_BURSTS; i++) {
-			if (i < particleBursts.length) {
-				const burst = particleBursts[i];
-				const age = (timestamp - burst.startTime) / 1000; // Convert to seconds
-				const intensity = Math.max(0, 1.0 - age / (BURST_DURATION / 1000));
+		for (let i = 0; i < MAX_SHADER_EFFECTS; i++) {
+			if (i < allEffects.length) {
+				const effect = allEffects[i];
+				const age = (timestamp - effect.startTime) / 1000; // Convert to seconds
+				const intensity = Math.max(0, 1.0 - age / (effect.duration / 1000));
 
-				burstPositions.push(burst.x, burst.y);
-				burstTimes.push(age);
-				burstIntensities.push(intensity);
+				effectPositions.push(effect.position.x, effect.position.y);
+				effectTimes.push(age);
+				effectIntensities.push(intensity);
+				effectHueOffsets.push(effect.style.hueOffset);
+				effectParticleCounts.push(effect.particleCount);
 			} else {
 				// Fill unused slots with dummy data
-				burstPositions.push(0, 0);
-				burstTimes.push(0);
-				burstIntensities.push(0);
+				effectPositions.push(0, 0);
+				effectTimes.push(0);
+				effectIntensities.push(0);
+				effectHueOffsets.push(0);
+				effectParticleCounts.push(0);
 			}
 		}
 
 		// Set uniforms
-		const numBurstsLocation = gl.getUniformLocation(program, 'uNumBursts');
-		gl.uniform1i(numBurstsLocation, particleBursts.length);
+		const numEffectsLocation = gl.getUniformLocation(program, 'uNumEffects');
+		gl.uniform1i(numEffectsLocation, Math.min(allEffects.length, MAX_SHADER_EFFECTS));
 
-		const burstPositionsLocation = gl.getUniformLocation(program, 'uBurstPositions');
-		gl.uniform2fv(burstPositionsLocation, burstPositions);
+		const effectPositionsLocation = gl.getUniformLocation(program, 'uEffectPositions');
+		gl.uniform2fv(effectPositionsLocation, effectPositions);
 
-		const burstTimesLocation = gl.getUniformLocation(program, 'uBurstTimes');
-		gl.uniform1fv(burstTimesLocation, burstTimes);
+		const effectTimesLocation = gl.getUniformLocation(program, 'uEffectTimes');
+		gl.uniform1fv(effectTimesLocation, effectTimes);
 
-		const burstIntensitiesLocation = gl.getUniformLocation(program, 'uBurstIntensities');
-		gl.uniform1fv(burstIntensitiesLocation, burstIntensities);
+		const effectIntensitiesLocation = gl.getUniformLocation(program, 'uEffectIntensities');
+		gl.uniform1fv(effectIntensitiesLocation, effectIntensities);
+
+		const effectHueOffsetsLocation = gl.getUniformLocation(program, 'uEffectHueOffsets');
+		gl.uniform1fv(effectHueOffsetsLocation, effectHueOffsets);
 
 		const resolutionLocation = gl.getUniformLocation(program, 'uResolution');
 		gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
@@ -155,45 +156,24 @@
 		}
 		lastTriggerTime = now;
 
-		// Add new burst at random position
-		if (canvas) {
-			const newBurst: ParticleBurst = {
+		// Trigger instrument at random position
+		if (canvas && instrument?.isReady) {
+			const position = {
 				x: Math.random() * canvas.width,
-				y: Math.random() * canvas.height,
-				startTime: now
+				y: Math.random() * canvas.height
 			};
-
-			particleBursts.push(newBurst);
-
-			// Limit number of simultaneous bursts
-			if (particleBursts.length > MAX_BURSTS) {
-				particleBursts.shift(); // Remove oldest burst
-			}
+			instrument.trigger(position);
 		}
-
-		playGuitarStrum();
 	}
 
-	function playGuitarStrum() {
-		if (!audioContext || !guitarStrumBuffer) return;
-
-		// Create a new source for each play (allows overlapping sounds)
-		const source = audioContext.createBufferSource();
-		source.buffer = guitarStrumBuffer;
-		source.connect(audioContext.destination);
-		source.start(0);
-	}
-
-	async function loadAudio() {
+	async function initialiseInstrument(): Promise<void> {
 		if (!browser) return;
 
 		try {
-			audioContext = new AudioContext();
-			const response = await fetch(guitarStrumUrl);
-			const arrayBuffer = await response.arrayBuffer();
-			guitarStrumBuffer = await audioContext.decodeAudioData(arrayBuffer);
+			instrument = new Guitar();
+			await instrument.initialise();
 		} catch (error) {
-			console.error('Error loading audio:', error);
+			console.error('Error initialising instrument:', error);
 		}
 	}
 
@@ -263,7 +243,7 @@
 		resizeCanvas();
 		initWebGL();
 		connectWebSocket();
-		loadAudio();
+		initialiseInstrument();
 
 		window.addEventListener('resize', resizeCanvas);
 
@@ -287,9 +267,9 @@
 				ws = null;
 			}
 
-			if (audioContext) {
-				audioContext.close();
-				audioContext = null;
+			if (instrument) {
+				instrument.cleanup();
+				instrument = null;
 			}
 		};
 	});
