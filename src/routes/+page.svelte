@@ -52,6 +52,7 @@
 	let heartbeatInterval: number | null = null;
 	let reconnectTimeout: number | null = null;
 	let isCleaningUp = false;
+	let wakeLock: WakeLockSentinel | null = null;
 
 	// Strum detection variables
 	let accelHistory: AccelSample[] = [];
@@ -185,10 +186,27 @@
 		}, 500);
 	}
 
+	// Request wake lock to prevent screen from sleeping
+	async function requestWakeLock() {
+		if (!browser || !('wakeLock' in navigator)) return;
+
+		try {
+			wakeLock = await navigator.wakeLock.request('screen');
+			console.log('Wake lock acquired');
+
+			wakeLock.addEventListener('release', () => {
+				console.log('Wake lock released');
+			});
+		} catch (err) {
+			console.error('Failed to acquire wake lock:', err);
+		}
+	}
+
 	// Initialize on mount
 	onMount(() => {
 		deviceId = getDeviceId();
 		connectWebSocket();
+		requestWakeLock();
 
 		if (typeof DeviceMotionEvent !== 'undefined') {
 			// @ts-expect-error - requestPermission is iOS-specific
@@ -219,6 +237,11 @@
 			if (ws) {
 				ws.close();
 				ws = null;
+			}
+
+			if (wakeLock) {
+				wakeLock.release();
+				wakeLock = null;
 			}
 		};
 	});
