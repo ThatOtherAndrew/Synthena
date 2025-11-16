@@ -44,8 +44,8 @@ export class Vibraphone implements Instrument {
 		source.buffer = this.audioBuffer;
 
 		if (heldNotes && heldNotes.size > 0) {
-			const lowestNote = Math.max(...heldNotes);
-			const semitoneOffset = lowestNote - 60; // Middle C = 60
+			const randomNote = Array.from(heldNotes)[Math.floor(Math.random() * heldNotes.size)];
+			const semitoneOffset = randomNote - 60; // Middle C = 60
 			source.playbackRate.value = Math.pow(2, semitoneOffset / 12);
 		}
 
