@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import guitarIcon from '$lib/assets/guitar.png';
 	import vibraphoneIcon from '$lib/assets/vibraphone.png';
+	import bassIcon from '$lib/assets/bass.png';
 	import Instrument from '$lib/components/Instrument.svelte';
 	import SettingsIcon from '$lib/components/SettingsIcon.svelte';
 	import { onMount } from 'svelte';
@@ -15,6 +16,10 @@
 		{
 			name: 'Vibraphone',
 			icon: vibraphoneIcon
+		},
+		{
+			name: 'Bass',
+			icon: bassIcon
 		}
 	] as const;
 

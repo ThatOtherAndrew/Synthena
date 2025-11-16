@@ -1,9 +1,5 @@
 import type { ParticleEffect, ParticleEffectFactory, ParticleStyle } from '../ParticleEffect';
 
-/**
- * Vibraphone-specific particle effect factory.
- * Creates elegant, shimmering particle bursts with cyan/blue tones.
- */
 export class VibraphoneParticles implements ParticleEffectFactory {
 	private effectIdCounter = 0;
 

@@ -1,13 +1,13 @@
 import type { Instrument } from '../Instrument';
 import type { ParticleEffect } from '../ParticleEffect';
-import { VibraphoneParticles } from './VibraphoneParticles';
-import vibraphoneUrl from './vibraphone.wav';
+import { BassParticles } from './BassParticles';
+import sampleUrl from './bass_pluck.wav';
 
-export class Vibraphone implements Instrument {
+export class Bass implements Instrument {
 	private audioContext: AudioContext | null = null;
 	private audioBuffer: AudioBuffer | null = null;
 	private ready = false;
-	private particleFactory = new VibraphoneParticles();
+	private particleFactory = new BassParticles();
 	private activeEffects: ParticleEffect[] = [];
 
 	get isReady(): boolean {
@@ -19,33 +19,33 @@ export class Vibraphone implements Instrument {
 
 		try {
 			this.audioContext = new AudioContext();
-			const response = await fetch(vibraphoneUrl);
+			const response = await fetch(sampleUrl);
 			const arrayBuffer = await response.arrayBuffer();
 			this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
 			this.ready = true;
 		} catch (error) {
-			console.error('Failed to initialise Vibraphone instrument:', error);
+			console.error('Failed to initialise Bass instrument:', error);
 			throw error;
 		}
 	}
 
 	trigger(position: { x: number; y: number }, intensity?: number, heldNotes?: Set<number>): void {
 		if (!this.audioContext || !this.audioBuffer) {
-			console.warn('Vibraphone not initialised. Call initialise() first.');
+			console.warn('Bass not initialised. Call initialise() first.');
 			return;
 		}
 
-		// Create audio
 		const source = this.audioContext.createBufferSource();
 		source.buffer = this.audioBuffer;
 
+		// Always play the lowest held note
 		if (heldNotes && heldNotes.size > 0) {
-			const randomNote = Array.from(heldNotes)[Math.floor(Math.random() * heldNotes.size)];
-			const semitoneOffset = randomNote - 60; // Middle C = 60
+			const lowestNote = Math.min(...heldNotes);
+			const semitoneOffset = lowestNote - 64;
 			source.playbackRate.value = Math.pow(2, semitoneOffset / 12);
 		}
 
-		// Optional: Apply gain based on intensity
+		// Apply gain based on intensity
 		if (intensity !== undefined) {
 			const gainNode = this.audioContext.createGain();
 			gainNode.gain.value = Math.max(0, Math.min(1, intensity));

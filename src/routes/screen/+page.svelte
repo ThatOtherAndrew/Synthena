@@ -5,6 +5,7 @@
 	import fragmentShaderSource from './fragment.glsl?raw';
 	import { Guitar } from '$lib/instruments/guitar/Guitar';
 	import { Vibraphone } from '$lib/instruments/vibraphone/Vibraphone';
+	import { Bass } from '$lib/instruments/bass/Bass';
 	import type { Instrument } from '$lib/instruments/Instrument';
 	import { MidiManager } from '$lib/midi/MidiManager';
 
@@ -213,11 +214,13 @@
 			// Initialise all instruments
 			const guitar = new Guitar();
 			const vibraphone = new Vibraphone();
+			const bass = new Bass();
 
-			await Promise.all([guitar.initialise(), vibraphone.initialise()]);
+			await Promise.all([guitar.initialise(), vibraphone.initialise(), bass.initialise()]);
 
 			instruments.set('Guitar', guitar);
 			instruments.set('Vibraphone', vibraphone);
+			instruments.set('Bass', bass);
 		} catch (error) {
 			console.error('Error initialising instruments:', error);
 		}
