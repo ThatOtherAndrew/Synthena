@@ -4,12 +4,6 @@
 	import SettingsIcon from '$lib/components/SettingsIcon.svelte';
 	import { onMount } from 'svelte';
 
-	interface AccelerationData {
-		x: number | null;
-		y: number | null;
-		z: number | null;
-	}
-
 	// Instrument selection
 	const INSTRUMENTS = [
 		{
@@ -26,7 +20,6 @@
 	let selectedInstrument = $derived(INSTRUMENTS[currentInstrumentIndex]);
 	let cycleDirection = $state<'left' | 'right'>('right');
 
-	let acceleration = $state<AccelerationData>({ x: null, y: null, z: null });
 	let permissionNeeded = $state(false);
 	let error = $state<string | null>(null);
 	let connected = $state(false);
@@ -50,7 +43,7 @@
 
 	// Non-reactive variables for WebSocket management
 	let ws: WebSocket | null = null;
-	let deviceId = '';
+	let deviceId = $state('');
 	let heartbeatInterval: number | null = null;
 	let reconnectTimeout: number | null = null;
 	let isCleaningUp = false;
@@ -319,13 +312,6 @@
 	function handleMotion(event: DeviceMotionEvent) {
 		const acc = event.accelerationIncludingGravity;
 		if (acc && acc.x !== null && acc.y !== null && acc.z !== null) {
-			// Update local display
-			acceleration = {
-				x: acc.x,
-				y: acc.y,
-				z: acc.z
-			};
-
 			// Add to history for strum detection
 			accelHistory.push({
 				x: acc.x,

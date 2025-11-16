@@ -3,10 +3,10 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { webSocketPlugin } from './src/lib/server/websocket-plugin';
 
-export default defineConfig({
-	plugins: [sveltekit(), devtoolsJson(), webSocketPlugin()],
+export default defineConfig(({ mode }) => ({
+	plugins: [sveltekit(), devtoolsJson(), ...(mode === 'development' ? [webSocketPlugin()] : [])],
 
 	server: {
-		allowedHosts: ['tunnel.thatother.dev', 'd8eb9714621a.ngrok-free.app']
+		allowedHosts: ['tunnel.thatother.dev']
 	}
-});
+}));

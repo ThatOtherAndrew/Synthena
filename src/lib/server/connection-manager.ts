@@ -17,8 +17,12 @@ class ConnectionManager {
 	private screens = new Set<WebSocket>();
 	private heartbeatInterval: NodeJS.Timeout | null = null;
 	private readonly HEARTBEAT_TIMEOUT = 15000; // 15 seconds
+	private initialised = false;
 
-	constructor() {
+	private initialise(): void {
+		if (this.initialised) return;
+		this.initialised = true;
+
 		// Check for stale connections every 5 seconds
 		this.heartbeatInterval = setInterval(() => {
 			this.checkStaleConnections();
@@ -26,6 +30,7 @@ class ConnectionManager {
 	}
 
 	registerDevice(deviceId: string, ws?: WebSocket): void {
+		this.initialise();
 		const now = Date.now();
 		const existing = this.devices.get(deviceId);
 
@@ -75,6 +80,7 @@ class ConnectionManager {
 	}
 
 	registerDashboard(ws: WebSocket): void {
+		this.initialise();
 		this.dashboards.add(ws);
 		// Send current state immediately
 		this.sendDeviceList(ws);
@@ -85,6 +91,7 @@ class ConnectionManager {
 	}
 
 	registerScreen(ws: WebSocket): void {
+		this.initialise();
 		this.screens.add(ws);
 	}
 
