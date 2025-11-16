@@ -58,19 +58,17 @@
 		justify-items: center;
 		justify-content: center;
 		flex-direction: column;
-		/* text-align: center; */
-		/* height: min(400px, calc(100vh - 120px)) !important; */
 	}
 
 	.instrument-label {
-		font-size: min(70px, 12vmin);
+		font-size: min(40px, 8vmin);
 		margin-top: 0 !important;
 		margin-bottom: 0 !important;
 		grid-area: 2 / 1 / 3 / 4;
 	}
 
 	.instrument img {
-		max-width: 100%;
+		max-width: calc(100vw - 100px);
 		max-height: calc(100vh - 120px);
 		grid-area: 1 / 2 / 2 / 3;
 	}
