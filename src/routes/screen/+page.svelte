@@ -169,6 +169,9 @@
 		const effectSeedsLocation = gl.getUniformLocation(program, 'uEffectSeeds');
 		gl.uniform1fv(effectSeedsLocation, effectSeeds);
 
+		const timeLocation = gl.getUniformLocation(program, 'uTime');
+		gl.uniform1f(timeLocation, timestamp / 1000); // Convert to seconds
+
 		const resolutionLocation = gl.getUniformLocation(program, 'uResolution');
 		gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
 

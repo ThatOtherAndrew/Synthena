@@ -1,6 +1,7 @@
 precision highp float;
 
 uniform vec2 uResolution;
+uniform float uTime;
 uniform int uNumEffects;
 uniform vec2 uEffectPositions[10];
 uniform float uEffectTimes[10];
@@ -31,7 +32,19 @@ void main() {
     float aspect = uResolution.x / uResolution.y;
     uv.x *= aspect;
 
-    vec3 color = vec3(0.0);
+    // Animated background gradient
+    vec2 center = vec2(0.5 * aspect, 0.5);
+    float dist = length(uv - center);
+
+    // Create animated gradient with noise
+    float noise1 = random(vec2(uv.x * 3.0, uv.y * 3.0 + uTime * 0.1));
+    float noise2 = random(vec2(uv.x * 5.0 - uTime * 0.05, uv.y * 5.0));
+
+    // Dark blue to purple gradient with subtle noise
+    vec3 bgColor1 = vec3(0.02, 0.02, 0.08); // Very dark blue
+    vec3 bgColor2 = vec3(0.08, 0.02, 0.12); // Very dark purple
+    float gradient = dist + noise1 * 0.1 + noise2 * 0.05;
+    vec3 color = mix(bgColor1, bgColor2, gradient);
 
     // Render each active effect from all instruments
     for (int effectIdx = 0; effectIdx < 10; effectIdx++) {
