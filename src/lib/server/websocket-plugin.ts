@@ -72,9 +72,12 @@ export function webSocketPlugin(): Plugin {
 								break;
 
 							case 'strum':
-								if (message.deviceId) {
-									connectionManager.handleStrum(message.deviceId, message.intensity || 1.0);
-									console.log(`Strum detected from ${message.deviceId}`);
+								if (message.deviceId && message.instrument) {
+									connectionManager.handleStrum(
+										message.deviceId,
+										message.instrument,
+										message.intensity || 1.0
+									);
 								}
 								break;
 

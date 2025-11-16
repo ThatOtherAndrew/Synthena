@@ -4,6 +4,7 @@
 	import vertexShaderSource from './vertex.glsl?raw';
 	import fragmentShaderSource from './fragment.glsl?raw';
 	import { Guitar } from '$lib/instruments/guitar/Guitar';
+	import { Vibraphone } from '$lib/instruments/vibraphone/Vibraphone';
 	import type { Instrument } from '$lib/instruments/Instrument';
 
 	let canvas: HTMLCanvasElement;
@@ -16,7 +17,7 @@
 	let gl: WebGLRenderingContext | null = null;
 	let program: WebGLProgram | null = null;
 	let animationFrameId: number | null = null;
-	let instrument: Instrument | null = null;
+	let instruments: Map<string, Instrument> = new Map();
 	let lastTriggerTime = 0;
 	const TRIGGER_DEBOUNCE = 100; // Minimum 100ms between any triggers
 
@@ -88,7 +89,10 @@
 		if (!gl || !program || isCleaningUp) return;
 
 		// Get all active effects from all instruments
-		const allEffects = instrument ? instrument.getActiveEffects(timestamp) : [];
+		const allEffects: any[] = [];
+		for (const instrument of instruments.values()) {
+			allEffects.push(...instrument.getActiveEffects(timestamp));
+		}
 
 		// Prepare effect data for shader (support unlimited effects, but shader has max)
 		const MAX_SHADER_EFFECTS = 10;
@@ -96,7 +100,9 @@
 		const effectTimes: number[] = [];
 		const effectIntensities: number[] = [];
 		const effectHueOffsets: number[] = [];
-		const effectParticleCounts: number[] = [];
+		const effectSaturations: number[] = [];
+		const effectSizeMultipliers: number[] = [];
+		const effectGlowIntensities: number[] = [];
 
 		for (let i = 0; i < MAX_SHADER_EFFECTS; i++) {
 			if (i < allEffects.length) {
@@ -108,14 +114,18 @@
 				effectTimes.push(age);
 				effectIntensities.push(intensity);
 				effectHueOffsets.push(effect.style.hueOffset);
-				effectParticleCounts.push(effect.particleCount);
+				effectSaturations.push(effect.style.saturation);
+				effectSizeMultipliers.push(effect.style.sizeMultiplier);
+				effectGlowIntensities.push(effect.style.glowIntensity);
 			} else {
 				// Fill unused slots with dummy data
 				effectPositions.push(0, 0);
 				effectTimes.push(0);
 				effectIntensities.push(0);
 				effectHueOffsets.push(0);
-				effectParticleCounts.push(0);
+				effectSaturations.push(0);
+				effectSizeMultipliers.push(1);
+				effectGlowIntensities.push(0);
 			}
 		}
 
@@ -135,6 +145,15 @@
 		const effectHueOffsetsLocation = gl.getUniformLocation(program, 'uEffectHueOffsets');
 		gl.uniform1fv(effectHueOffsetsLocation, effectHueOffsets);
 
+		const effectSaturationsLocation = gl.getUniformLocation(program, 'uEffectSaturations');
+		gl.uniform1fv(effectSaturationsLocation, effectSaturations);
+
+		const effectSizeMultipliersLocation = gl.getUniformLocation(program, 'uEffectSizeMultipliers');
+		gl.uniform1fv(effectSizeMultipliersLocation, effectSizeMultipliers);
+
+		const effectGlowIntensitiesLocation = gl.getUniformLocation(program, 'uEffectGlowIntensities');
+		gl.uniform1fv(effectGlowIntensitiesLocation, effectGlowIntensities);
+
 		const resolutionLocation = gl.getUniformLocation(program, 'uResolution');
 		gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
 
@@ -147,7 +166,7 @@
 		animationFrameId = requestAnimationFrame(render);
 	}
 
-	function triggerFlash() {
+	function triggerInstrument(instrumentName: string) {
 		const now = performance.now();
 
 		// Global debounce to prevent double-triggering from multiple sources
@@ -156,7 +175,9 @@
 		}
 		lastTriggerTime = now;
 
-		// Trigger instrument at random position
+		// Trigger specific instrument at random position
+		const instrument = instruments.get(instrumentName);
+
 		if (canvas && instrument?.isReady) {
 			const position = {
 				x: Math.random() * canvas.width,
@@ -166,14 +187,20 @@
 		}
 	}
 
-	async function initialiseInstrument(): Promise<void> {
+	async function initialiseInstruments(): Promise<void> {
 		if (!browser) return;
 
 		try {
-			instrument = new Guitar();
-			await instrument.initialise();
+			// Initialise all instruments
+			const guitar = new Guitar();
+			const vibraphone = new Vibraphone();
+
+			await Promise.all([guitar.initialise(), vibraphone.initialise()]);
+
+			instruments.set('Guitar', guitar);
+			instruments.set('Vibraphone', vibraphone);
 		} catch (error) {
-			console.error('Error initialising instrument:', error);
+			console.error('Error initialising instruments:', error);
 		}
 	}
 
@@ -212,7 +239,9 @@
 
 					switch (message.type) {
 						case 'strum_event':
-							triggerFlash();
+							// Trigger specific instrument if provided, default to Guitar
+							const instrumentName = message.instrument || 'Guitar';
+							triggerInstrument(instrumentName);
 							break;
 
 						default:
@@ -243,7 +272,7 @@
 		resizeCanvas();
 		initWebGL();
 		connectWebSocket();
-		initialiseInstrument();
+		initialiseInstruments();
 
 		window.addEventListener('resize', resizeCanvas);
 
@@ -267,10 +296,11 @@
 				ws = null;
 			}
 
-			if (instrument) {
+			// Cleanup all instruments
+			for (const instrument of instruments.values()) {
 				instrument.cleanup();
-				instrument = null;
 			}
+			instruments.clear();
 		};
 	});
 </script>

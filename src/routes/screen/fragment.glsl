@@ -6,6 +6,9 @@ uniform vec2 uEffectPositions[10];
 uniform float uEffectTimes[10];
 uniform float uEffectIntensities[10];
 uniform float uEffectHueOffsets[10];
+uniform float uEffectSaturations[10];
+uniform float uEffectSizeMultipliers[10];
+uniform float uEffectGlowIntensities[10];
 
 // Random function
 float random(vec2 st) {
@@ -37,6 +40,9 @@ void main() {
 		float effectTime = uEffectTimes[effectIdx];
 		float effectIntensity = uEffectIntensities[effectIdx];
 		float hueOffset = uEffectHueOffsets[effectIdx];
+		float saturation = uEffectSaturations[effectIdx];
+		float sizeMultiplier = uEffectSizeMultipliers[effectIdx];
+		float glowIntensity = uEffectGlowIntensities[effectIdx];
 
 		if (effectIntensity > 0.01) {
 			// Number of particles per effect (fixed for now, could be per-effect)
@@ -60,15 +66,15 @@ void main() {
 				// Distance from current pixel to particle
 				float dist = length(uv - particleWorldPos);
 
-				// Particle size decreases over time
-				float size = 0.02 * (1.0 - t * 0.5) * effectIntensity;
+				// Particle size decreases over time (with instrument-specific size multiplier)
+				float size = 0.02 * sizeMultiplier * (1.0 - t * 0.5) * effectIntensity;
 
 				// Particle intensity (gaussian-like falloff)
 				float particleIntensity = exp(-dist * dist / (size * size * 0.5));
 
-				// Color: rainbow effect with instrument-specific hue offset
+				// Color: rainbow effect with instrument-specific hue offset and saturation
 				float hue = mod(angle / 6.28318 + hueOffset, 1.0);
-				vec3 particleColor = hsv2rgb(vec3(hue, 0.8, 1.0));
+				vec3 particleColor = hsv2rgb(vec3(hue, saturation, 1.0));
 
 				// Fade out over time
 				float fade = (1.0 - t) * effectIntensity;
@@ -77,9 +83,9 @@ void main() {
 				color += particleColor * particleIntensity;
 			}
 
-			// Add a central glow
+			// Add a central glow (with instrument-specific intensity)
 			vec2 centerDist = uv - effectPos;
-			float centerGlow = exp(-length(centerDist) * 15.0) * effectIntensity;
+			float centerGlow = exp(-length(centerDist) * 15.0) * effectIntensity * glowIntensity;
 			color += vec3(1.0) * centerGlow;
 		}
 	}

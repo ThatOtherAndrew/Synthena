@@ -53,11 +53,11 @@ class ConnectionManager {
 		}
 	}
 
-	handleStrum(deviceId: string, intensity: number): void {
+	handleStrum(deviceId: string, instrument: string, intensity: number): void {
 		const device = this.devices.get(deviceId);
 		if (device) {
 			device.lastSeen = Date.now();
-			this.broadcastStrumEvent(deviceId, intensity);
+			this.broadcastStrumEvent(deviceId, instrument, intensity);
 		}
 	}
 
@@ -149,13 +149,14 @@ class ConnectionManager {
 		}
 	}
 
-	private broadcastStrumEvent(deviceId: string, intensity: number): void {
+	private broadcastStrumEvent(deviceId: string, instrument: string, intensity: number): void {
 		for (const screen of this.screens) {
 			try {
 				screen.send(
 					JSON.stringify({
 						type: 'strum_event',
 						deviceId,
+						instrument,
 						intensity
 					})
 				);

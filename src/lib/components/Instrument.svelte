@@ -1,15 +1,20 @@
 <script lang="ts">
-    let { instrumentName, imgUrl } = $props();
+    let { instrumentName, imgUrl, onCycleLeft, onCycleRight } = $props<{
+        instrumentName: string;
+        imgUrl: string;
+        onCycleLeft?: () => void;
+        onCycleRight?: () => void;
+    }>();
 </script>
 
 <div class="instrument">
-    <div class="nav-button left">
+    <button class="nav-button left" onclick={onCycleLeft} disabled={!onCycleLeft}>
         &lt;
-    </div>
-    <img src={imgUrl} />
-    <div class="nav-button right">
+    </button>
+    <img src={imgUrl} alt={instrumentName} />
+    <button class="nav-button right" onclick={onCycleRight} disabled={!onCycleRight}>
         &gt;
-    </div>
+    </button>
     <p class="instrument-label">
         {instrumentName}
     </p>
@@ -45,5 +50,20 @@
     }
     .nav-button {
         font-size: min(32px, 7vw);
+        background: none;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+        padding: 0.5rem;
+        transition: opacity 0.3s;
+    }
+
+    .nav-button:active:not(:disabled) {
+        opacity: 0.5;
+    }
+
+    .nav-button:disabled {
+        opacity: 0.3;
+        cursor: default;
     }
 </style>

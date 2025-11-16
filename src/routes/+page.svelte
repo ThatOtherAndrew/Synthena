@@ -9,10 +9,27 @@
 		z: number | null;
 	}
 
+	// Instrument selection
+	const INSTRUMENTS = [
+		{ name: 'Guitar', emoji: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3b8.png' },
+		{ name: 'Vibraphone', emoji: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3b9.png' }
+	] as const;
+
+	let currentInstrumentIndex = $state(0);
+	let selectedInstrument = $derived(INSTRUMENTS[currentInstrumentIndex]);
+
 	let acceleration = $state<AccelerationData>({ x: null, y: null, z: null });
 	let permissionNeeded = $state(false);
 	let error = $state<string | null>(null);
 	let connected = $state(false);
+
+	function cycleInstrument(direction: 'left' | 'right') {
+		if (direction === 'left') {
+			currentInstrumentIndex = (currentInstrumentIndex - 1 + INSTRUMENTS.length) % INSTRUMENTS.length;
+		} else {
+			currentInstrumentIndex = (currentInstrumentIndex + 1) % INSTRUMENTS.length;
+		}
+	}
 
 	interface AccelSample {
 		x: number;
@@ -103,7 +120,11 @@
 				try {
 					const message = JSON.parse(event.data);
 
-					if (message.type === 'heartbeat_ack' && message.timestamp !== undefined && message.deviceId) {
+					if (
+						message.type === 'heartbeat_ack' &&
+						message.timestamp !== undefined &&
+						message.deviceId
+					) {
 						// Calculate round-trip time from heartbeat echo
 						const rtt = Date.now() - message.timestamp;
 
@@ -292,6 +313,7 @@
 						JSON.stringify({
 							type: 'strum',
 							deviceId,
+							instrument: selectedInstrument.name,
 							intensity: Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z)
 						})
 					);
@@ -302,16 +324,11 @@
 </script>
 
 <div class="container">
-
-	
-
 	<div class="status" class:connected>
 		{connected ? '●' : '○'}
 	</div>
 
-	<div class="status-id" class:connected>
-		linux-f9nw66x
-	</div>
+	<div class="status-id" class:connected>linux-f9nw66x</div>
 
 	{#if error}
 		<div class="error">{error}</div>
@@ -321,7 +338,12 @@
 			<button onclick={requestPermission}>Enable Accelerometer</button>
 		</div>
 	{:else}
-		<Instrument instrumentName="Guitar" imgUrl="https://placehold.co/400" />
+		<Instrument
+			instrumentName={selectedInstrument.name}
+			imgUrl={selectedInstrument.emoji}
+			onCycleLeft={() => cycleInstrument('left')}
+			onCycleRight={() => cycleInstrument('right')}
+		/>
 		<!-- <div class="data">
 			<div class="axis">
 				<span class="label">X:</span>
@@ -432,8 +454,8 @@
 		transition: color 0.3s;
 	}
 
-	.status.connected, .status-id.connected {
+	.status.connected,
+	.status-id.connected {
 		color: #4ade80;
 	}
-
 </style>
