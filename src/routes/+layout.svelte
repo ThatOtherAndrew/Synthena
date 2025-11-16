@@ -5,6 +5,7 @@
 </script>
 
 <svelte:head>
+	<title>Synthena!</title>
 	<link rel="icon" href={logo} />
 </svelte:head>
 

@@ -125,6 +125,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Synthena Dashboard</title>
+</svelte:head>
+
 <div class="container">
 	<header>
 		<span class="logo-title">
