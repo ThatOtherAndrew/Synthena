@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import Instrument from '$lib/components/Instrument.svelte';
 	import { onMount } from 'svelte';
 
 	interface AccelerationData {
@@ -271,8 +272,15 @@
 </script>
 
 <div class="container">
+
+	
+
 	<div class="status" class:connected>
 		{connected ? '●' : '○'}
+	</div>
+
+	<div class="status-id" class:connected>
+		linux-f9nw66x
 	</div>
 
 	{#if error}
@@ -283,7 +291,8 @@
 			<button onclick={requestPermission}>Enable Accelerometer</button>
 		</div>
 	{:else}
-		<div class="data">
+		<Instrument instrumentName="Guitar" imgUrl="https://placehold.co/400" />
+		<!-- <div class="data">
 			<div class="axis">
 				<span class="label">X:</span>
 				<span class="value">{acceleration.x?.toFixed(2) ?? '---'}</span>
@@ -296,7 +305,7 @@
 				<span class="label">Z:</span>
 				<span class="value">{acceleration.z?.toFixed(2) ?? '---'}</span>
 			</div>
-		</div>
+		</div> -->
 	{/if}
 </div>
 
@@ -377,13 +386,24 @@
 	.status {
 		position: absolute;
 		top: 1rem;
-		right: 1rem;
+		left: 1rem;
 		font-size: 2rem;
+		color: #666;
+		transition: color 0.3s;
+		line-height: 16px;
+	}
+
+	.status-id {
+		position: absolute;
+		top: 1.04rem;
+		left: 2.75rem;
+		font-size: 1rem;
 		color: #666;
 		transition: color 0.3s;
 	}
 
-	.status.connected {
+	.status.connected, .status-id.connected {
 		color: #4ade80;
 	}
+
 </style>
