@@ -10,6 +10,7 @@ uniform float uEffectSaturations[10];
 uniform float uEffectSizeMultipliers[10];
 uniform float uEffectGlowIntensities[10];
 uniform float uEffectRainbow[10]; // 1.0 for rainbow, 0.0 for single colour
+uniform float uEffectSeeds[10]; // Random seed per effect for variation
 
 // Random function
 float random(vec2 st) {
@@ -45,6 +46,7 @@ void main() {
         float sizeMultiplier = uEffectSizeMultipliers[effectIdx];
         float glowIntensity = uEffectGlowIntensities[effectIdx];
         float rainbow = uEffectRainbow[effectIdx];
+        float seed = uEffectSeeds[effectIdx];
 
         if (effectIntensity > 0.01) {
             // Number of particles per effect (fixed for now, could be per-effect)
@@ -54,10 +56,11 @@ void main() {
                 float fi = float(i);
 
                 // Evenly distribute angles around the circle, with slight randomization
+                // Use effect seed for unique pattern per trigger
                 float baseAngle = (fi / float(numParticles)) * 6.28318;
-                float angleVariation = (random(vec2(fi * 12.345, fi * 67.890)) - 0.5) * 0.3;
+                float angleVariation = (random(vec2(fi * 12.345 + seed, fi * 67.890 + seed)) - 0.5) * 0.3;
                 float angle = baseAngle + angleVariation;
-                float speed = 0.3 + random(vec2(fi * 23.456, fi * 89.012)) * 0.5;
+                float speed = 0.15 + random(vec2(fi * 23.456 + seed, fi * 89.012 + seed)) * 0.25;
 
                 // Particle position over time
                 vec2 dir = vec2(cos(angle), sin(angle));

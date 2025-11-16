@@ -47,6 +47,8 @@ export interface ParticleEffect {
 	particleCount: number;
 	/** Visual styling for this effect */
 	style: ParticleStyle;
+	/** Random seed for particle pattern variation */
+	seed: number;
 	/** Optional: Pre-computed particle configurations for deterministic rendering */
 	particles?: ParticleConfig[];
 }

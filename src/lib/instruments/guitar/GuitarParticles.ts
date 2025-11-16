@@ -30,7 +30,8 @@ export class GuitarParticles implements ParticleEffectFactory {
 			startTime: performance.now(),
 			duration: this.EFFECT_DURATION,
 			particleCount: this.PARTICLE_COUNT,
-			style: this.style
+			style: this.style,
+			seed: Math.random() * 1000
 		};
 	}
 }
