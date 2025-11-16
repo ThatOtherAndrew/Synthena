@@ -1,12 +1,8 @@
 import type { Instrument } from '../Instrument';
 import type { ParticleEffect } from '../ParticleEffect';
 import { GuitarParticles } from './GuitarParticles';
-import guitarStrumUrl from './guitar_strum.wav';
+import sampleUrl from './guitar_pluck.wav';
 
-/**
- * Guitar instrument implementation.
- * Plays back a pre-recorded guitar strum sample and spawns colourful particle effects.
- */
 export class Guitar implements Instrument {
 	private audioContext: AudioContext | null = null;
 	private audioBuffer: AudioBuffer | null = null;
@@ -23,7 +19,7 @@ export class Guitar implements Instrument {
 
 		try {
 			this.audioContext = new AudioContext();
-			const response = await fetch(guitarStrumUrl);
+			const response = await fetch(sampleUrl);
 			const arrayBuffer = await response.arrayBuffer();
 			this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
 			this.ready = true;
@@ -39,27 +35,49 @@ export class Guitar implements Instrument {
 			return;
 		}
 
-		// Create audio
-		const source = this.audioContext.createBufferSource();
-		source.buffer = this.audioBuffer;
-
 		if (heldNotes && heldNotes.size > 0) {
-			const lowestNote = Math.min(...heldNotes);
-			const semitoneOffset = lowestNote - 63; // E flat
-			source.playbackRate.value = Math.pow(2, semitoneOffset / 12);
-		}
+			// Sort notes from lowest to highest for upwards strum
+			const sortedNotes = Array.from(heldNotes).sort((a, b) => a - b);
+			const STRUM_DELAY_MS = 30;
 
-		// Optional: Apply gain based on intensity
-		if (intensity !== undefined) {
-			const gainNode = this.audioContext.createGain();
-			gainNode.gain.value = Math.max(0, Math.min(1, intensity));
-			source.connect(gainNode);
-			gainNode.connect(this.audioContext.destination);
+			sortedNotes.forEach((note, index) => {
+				const source = this.audioContext!.createBufferSource();
+				source.buffer = this.audioBuffer;
+
+				// Calculate pitch shift from base note (E3 = MIDI 52)
+				const semitoneOffset = note - 52;
+				source.playbackRate.value = Math.pow(2, semitoneOffset / 12);
+
+				// Apply gain based on intensity
+				if (intensity !== undefined) {
+					const gainNode = this.audioContext!.createGain();
+					gainNode.gain.value = Math.max(0, Math.min(1, intensity));
+					source.connect(gainNode);
+					gainNode.connect(this.audioContext!.destination);
+				} else {
+					source.connect(this.audioContext!.destination);
+				}
+
+				// Schedule start with strum delay
+				const startTime = this.audioContext!.currentTime + (index * STRUM_DELAY_MS) / 1000;
+				source.start(startTime);
+			});
 		} else {
-			source.connect(this.audioContext.destination);
-		}
+			// No held notes - play base note
+			const source = this.audioContext.createBufferSource();
+			source.buffer = this.audioBuffer;
 
-		source.start(0);
+			if (intensity !== undefined) {
+				const gainNode = this.audioContext.createGain();
+				gainNode.gain.value = Math.max(0, Math.min(1, intensity));
+				source.connect(gainNode);
+				gainNode.connect(this.audioContext.destination);
+			} else {
+				source.connect(this.audioContext.destination);
+			}
+
+			source.start(0);
+		}
 
 		// Create particle effect
 		const effect = this.particleFactory.createEffect(position, intensity);
