@@ -1,122 +1,25 @@
 import type { Plugin } from 'vite';
-import { WebSocketServer } from 'ws';
-import type { IncomingMessage } from 'http';
-import type { Duplex } from 'stream';
-import { connectionManager } from './connection-manager';
+import type { WebSocketServer } from 'ws';
+import { setupWebSocketServer } from './websocket-server';
 
+/**
+ * Vite plugin that adds WebSocket support during development.
+ * In production, use server.js instead.
+ */
 export function webSocketPlugin(): Plugin {
-	let wss: WebSocketServer;
+	let wss: WebSocketServer | null = null;
 
 	return {
 		name: 'websocket-plugin',
 		configureServer(server) {
-			wss = new WebSocketServer({ noServer: true });
+			if (!server.httpServer) return;
 
-			server.httpServer?.on('upgrade', (request: IncomingMessage, socket: Duplex, head: Buffer) => {
-				if (request.url === '/ws') {
-					wss.handleUpgrade(request, socket, head, (ws) => {
-						wss.emit('connection', ws, request);
-					});
-				}
-			});
-
-			wss.on('connection', (ws) => {
-				let deviceId: string | null = null;
-				let isDashboard = false;
-				let isScreen = false;
-
-				ws.on('message', (data) => {
-					try {
-						const message = JSON.parse(data.toString());
-
-						switch (message.type) {
-							case 'connect':
-								if (message.deviceId) {
-									deviceId = message.deviceId as string;
-									connectionManager.registerDevice(deviceId, ws);
-									console.log(`Device connected: ${deviceId}`);
-								}
-								break;
-
-							case 'heartbeat':
-								if (message.deviceId) {
-									connectionManager.updateHeartbeat(message.deviceId);
-
-									// Echo timestamp back for RTT measurement
-									if (message.timestamp !== undefined) {
-										try {
-											ws.send(
-												JSON.stringify({
-													type: 'heartbeat_ack',
-													deviceId: message.deviceId,
-													timestamp: message.timestamp
-												})
-											);
-										} catch (error) {
-											console.error('Error sending heartbeat ack:', error);
-										}
-									}
-								}
-								break;
-
-							case 'dashboard':
-								isDashboard = true;
-								connectionManager.registerDashboard(ws);
-								console.log('Dashboard connected');
-								break;
-
-							case 'screen':
-								isScreen = true;
-								connectionManager.registerScreen(ws);
-								console.log('Screen connected');
-								break;
-
-							case 'strum':
-								if (message.deviceId && message.instrument) {
-									connectionManager.handleStrum(
-										message.deviceId,
-										message.instrument,
-										message.intensity || 1.0
-									);
-								}
-								break;
-
-							case 'ping_update':
-								// Client calculated RTT from heartbeat echo and is reporting it
-								if (message.deviceId && message.ping !== undefined) {
-									connectionManager.updatePing(message.deviceId, message.ping);
-								}
-								break;
-						}
-					} catch (error) {
-						console.error('Error parsing WebSocket message:', error);
-					}
-				});
-
-				ws.on('close', () => {
-					if (isDashboard) {
-						connectionManager.unregisterDashboard(ws);
-						console.log('Dashboard disconnected');
-					} else if (isScreen) {
-						connectionManager.unregisterScreen(ws);
-						console.log('Screen disconnected');
-					} else if (deviceId) {
-						connectionManager.removeDevice(deviceId);
-						console.log(`Device disconnected: ${deviceId}`);
-					}
-				});
-
-				ws.on('error', (error) => {
-					console.error('WebSocket error:', error);
-				});
-			});
-
-			console.log('WebSocket server initialised on /ws');
+			// Use shared WebSocket setup function
+			wss = setupWebSocketServer(server.httpServer);
 		},
 		closeBundle() {
 			if (wss) {
 				wss.close();
-				connectionManager.cleanup();
 			}
 		}
 	};
