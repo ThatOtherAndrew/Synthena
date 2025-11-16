@@ -7,6 +7,6 @@ export default defineConfig({
 	plugins: [sveltekit(), devtoolsJson(), webSocketPlugin()],
 
 	server: {
-		allowedHosts: ['tunnel.thatother.dev']
+		allowedHosts: ['tunnel.thatother.dev', 'd8eb9714621a.ngrok-free.app']
 	}
 });
