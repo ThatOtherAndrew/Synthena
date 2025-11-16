@@ -58,8 +58,9 @@ export class Guitar implements Instrument {
 					source.connect(this.audioContext!.destination);
 				}
 
-				// Schedule start with strum delay
-				const startTime = this.audioContext!.currentTime + (index * STRUM_DELAY_MS) / 1000;
+				const now = this.audioContext!.currentTime;
+				const randomVariance = Math.random() * 10;
+				const startTime = now + (index * STRUM_DELAY_MS + randomVariance) / 1000;
 				source.start(startTime);
 			});
 		} else {
