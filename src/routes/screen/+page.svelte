@@ -103,6 +103,7 @@
 		const effectSaturations: number[] = [];
 		const effectSizeMultipliers: number[] = [];
 		const effectGlowIntensities: number[] = [];
+		const effectRainbow: number[] = [];
 
 		for (let i = 0; i < MAX_SHADER_EFFECTS; i++) {
 			if (i < allEffects.length) {
@@ -117,6 +118,7 @@
 				effectSaturations.push(effect.style.saturation);
 				effectSizeMultipliers.push(effect.style.sizeMultiplier);
 				effectGlowIntensities.push(effect.style.glowIntensity);
+				effectRainbow.push(effect.style.rainbow ? 1.0 : 0.0);
 			} else {
 				// Fill unused slots with dummy data
 				effectPositions.push(0, 0);
@@ -126,6 +128,7 @@
 				effectSaturations.push(0);
 				effectSizeMultipliers.push(1);
 				effectGlowIntensities.push(0);
+				effectRainbow.push(0);
 			}
 		}
 
@@ -153,6 +156,9 @@
 
 		const effectGlowIntensitiesLocation = gl.getUniformLocation(program, 'uEffectGlowIntensities');
 		gl.uniform1fv(effectGlowIntensitiesLocation, effectGlowIntensities);
+
+		const effectRainbowLocation = gl.getUniformLocation(program, 'uEffectRainbow');
+		gl.uniform1fv(effectRainbowLocation, effectRainbow);
 
 		const resolutionLocation = gl.getUniformLocation(program, 'uResolution');
 		gl.uniform2f(resolutionLocation, canvas.width, canvas.height);

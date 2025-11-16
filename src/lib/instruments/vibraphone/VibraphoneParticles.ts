@@ -13,9 +13,9 @@ export class VibraphoneParticles implements ParticleEffectFactory {
 
 	// Vibraphone visual style: cyan/blue shimmer
 	private readonly style: ParticleStyle = {
-		hueOffset: 0.5, // Cyan starting point (shifted from rainbow)
+		hueOffset: 0.55, // Cyan/blue hue (cyan is around 0.5 on color wheel)
 		saturation: 0.9,
-		rainbow: true, // Still rainbow, but offset gives blue/cyan/green range
+		rainbow: false, // Single colour, not rainbow
 		sizeMultiplier: 0.8, // Slightly smaller, more delicate particles
 		showCentralGlow: true,
 		glowIntensity: 0.7 // Subtler glow than guitar
