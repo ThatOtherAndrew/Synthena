@@ -1,14 +1,10 @@
 import type { ParticleEffect, ParticleEffectFactory, ParticleStyle } from '../ParticleEffect';
 
-/**
- * Guitar-specific particle effect factory.
- * Creates colourful rainbow particle bursts with a central glow.
- */
 export class GuitarParticles implements ParticleEffectFactory {
 	private effectIdCounter = 0;
 
 	// Guitar-specific particle configuration
-	private readonly PARTICLE_COUNT = 50;
+	private readonly PARTICLE_COUNT = 30;
 	private readonly EFFECT_DURATION = 3000; // 3 seconds
 
 	// Guitar visual style: vibrant rainbow burst

@@ -32,18 +32,15 @@ void main() {
     float aspect = uResolution.x / uResolution.y;
     uv.x *= aspect;
 
-    // Animated background gradient
+    // Simple animated background gradient (optimized - no per-pixel noise)
     vec2 center = vec2(0.5 * aspect, 0.5);
     float dist = length(uv - center);
 
-    // Create animated gradient with noise
-    float noise1 = random(vec2(uv.x * 3.0, uv.y * 3.0 + uTime * 0.1));
-    float noise2 = random(vec2(uv.x * 5.0 - uTime * 0.05, uv.y * 5.0));
-
-    // Dark blue to purple gradient with subtle noise
+    // Smooth radial gradient with time-based variation
+    float timeVary = sin(uTime * 0.1) * 0.5 + 0.5;
     vec3 bgColor1 = vec3(0.02, 0.02, 0.08); // Very dark blue
     vec3 bgColor2 = vec3(0.08, 0.02, 0.12); // Very dark purple
-    float gradient = dist + noise1 * 0.1 + noise2 * 0.05;
+    float gradient = smoothstep(0.0, 1.5, dist + timeVary * 0.2);
     vec3 color = mix(bgColor1, bgColor2, gradient);
 
     // Render each active effect from all instruments
@@ -62,8 +59,8 @@ void main() {
         float seed = uEffectSeeds[effectIdx];
 
         if (effectIntensity > 0.01) {
-            // Number of particles per effect (fixed for now, could be per-effect)
-            const int numParticles = 50;
+            // Number of particles per effect (reduced for performance)
+            const int numParticles = 30;
 
             for (int i = 0; i < numParticles; i++) {
                 float fi = float(i);
@@ -87,8 +84,12 @@ void main() {
                 // Particle size decreases over time (with instrument-specific size multiplier)
                 float size = 0.02 * sizeMultiplier * (1.0 - t * 0.5) * effectIntensity;
 
-                // Particle intensity (gaussian-like falloff)
-                float particleIntensity = exp(-dist * dist / (size * size * 0.5));
+                // Early exit if particle is too far away (optimization)
+                if (dist > size * 4.0) continue;
+
+                // Particle intensity (sharp falloff with tighter range)
+                float particleIntensity = 1.0 - smoothstep(0.0, size * 2.0, dist);
+                particleIntensity = pow(particleIntensity, 3.0); // Cubic for sharper edge
 
                 // Color: rainbow effect or single color based on instrument
                 float angleHue = angle / 6.28318; // Hue based on particle angle
@@ -103,8 +104,8 @@ void main() {
             }
 
             // Add a central glow (with instrument-specific intensity)
-            vec2 centerDist = uv - effectPos;
-            float centerGlow = exp(-length(centerDist) * 15.0) * effectIntensity * glowIntensity;
+            float centerDist = length(uv - effectPos);
+            float centerGlow = (1.0 - smoothstep(0.0, 0.1, centerDist)) * effectIntensity * glowIntensity;
             color += vec3(1.0) * centerGlow;
         }
     }
