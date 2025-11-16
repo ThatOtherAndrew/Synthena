@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import Instrument from '$lib/components/Instrument.svelte';
+	import SettingsIcon from '$lib/components/SettingsIcon.svelte';
 	import { onMount } from 'svelte';
+	import gear from '$lib/assets/gear.png';
 
 	interface AccelerationData {
 		x: number | null;
@@ -11,8 +13,14 @@
 
 	// Instrument selection
 	const INSTRUMENTS = [
-		{ name: 'Guitar', emoji: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3b8.png' },
-		{ name: 'Vibraphone', emoji: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3b9.png' }
+		{
+			name: 'Guitar',
+			emoji: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3b8.png'
+		},
+		{
+			name: 'Vibraphone',
+			emoji: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3b9.png'
+		}
 	] as const;
 
 	let currentInstrumentIndex = $state(0);
@@ -25,7 +33,8 @@
 
 	function cycleInstrument(direction: 'left' | 'right') {
 		if (direction === 'left') {
-			currentInstrumentIndex = (currentInstrumentIndex - 1 + INSTRUMENTS.length) % INSTRUMENTS.length;
+			currentInstrumentIndex =
+				(currentInstrumentIndex - 1 + INSTRUMENTS.length) % INSTRUMENTS.length;
 		} else {
 			currentInstrumentIndex = (currentInstrumentIndex + 1) % INSTRUMENTS.length;
 		}
@@ -330,6 +339,8 @@
 
 	<div class="status-id" class:connected>linux-f9nw66x</div>
 
+	<SettingsIcon></SettingsIcon>
+
 	{#if error}
 		<div class="error">{error}</div>
 	{:else if permissionNeeded}
@@ -344,20 +355,6 @@
 			onCycleLeft={() => cycleInstrument('left')}
 			onCycleRight={() => cycleInstrument('right')}
 		/>
-		<!-- <div class="data">
-			<div class="axis">
-				<span class="label">X:</span>
-				<span class="value">{acceleration.x?.toFixed(2) ?? '---'}</span>
-			</div>
-			<div class="axis">
-				<span class="label">Y:</span>
-				<span class="value">{acceleration.y?.toFixed(2) ?? '---'}</span>
-			</div>
-			<div class="axis">
-				<span class="label">Z:</span>
-				<span class="value">{acceleration.z?.toFixed(2) ?? '---'}</span>
-			</div>
-		</div> -->
 	{/if}
 </div>
 
