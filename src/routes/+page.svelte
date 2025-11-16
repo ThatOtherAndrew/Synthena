@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import Instrument from '$lib/components/Instrument.svelte';
+	import SettingsIcon from '$lib/components/SettingsIcon.svelte'
 	import { onMount } from 'svelte';
+	import gear from '$lib/assets/gear.png';
+
 
 	interface AccelerationData {
 		x: number | null;
@@ -283,6 +286,10 @@
 		linux-f9nw66x
 	</div>
 
+	<SettingsIcon></SettingsIcon>
+
+	<!-- <img class="settings" src={gear}> -->
+
 	{#if error}
 		<div class="error">{error}</div>
 	{:else if permissionNeeded}
@@ -292,20 +299,6 @@
 		</div>
 	{:else}
 		<Instrument instrumentName="Guitar" imgUrl="https://placehold.co/400" />
-		<!-- <div class="data">
-			<div class="axis">
-				<span class="label">X:</span>
-				<span class="value">{acceleration.x?.toFixed(2) ?? '---'}</span>
-			</div>
-			<div class="axis">
-				<span class="label">Y:</span>
-				<span class="value">{acceleration.y?.toFixed(2) ?? '---'}</span>
-			</div>
-			<div class="axis">
-				<span class="label">Z:</span>
-				<span class="value">{acceleration.z?.toFixed(2) ?? '---'}</span>
-			</div>
-		</div> -->
 	{/if}
 </div>
 
