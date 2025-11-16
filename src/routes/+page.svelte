@@ -98,6 +98,30 @@
 				}
 			};
 
+			ws.onmessage = (event) => {
+				try {
+					const message = JSON.parse(event.data);
+
+					if (message.type === 'heartbeat_ack' && message.timestamp !== undefined && message.deviceId) {
+						// Calculate round-trip time from heartbeat echo
+						const rtt = Date.now() - message.timestamp;
+
+						// Send calculated ping back to server for storage and broadcast
+						if (ws && ws.readyState === WebSocket.OPEN) {
+							ws.send(
+								JSON.stringify({
+									type: 'ping_update',
+									deviceId: message.deviceId,
+									ping: rtt
+								})
+							);
+						}
+					}
+				} catch (error) {
+					console.error('Error parsing WebSocket message:', error);
+				}
+			};
+
 			ws.onclose = () => {
 				connected = false;
 				if (!isCleaningUp) {
@@ -114,13 +138,19 @@
 		}
 	}
 
-	// Send periodic heartbeats every 500ms
+	// Send periodic heartbeats every 500ms with timestamp for RTT measurement
 	function startHeartbeat() {
 		if (heartbeatInterval) clearInterval(heartbeatInterval);
 
 		heartbeatInterval = window.setInterval(() => {
 			if (ws && ws.readyState === WebSocket.OPEN && deviceId) {
-				ws.send(JSON.stringify({ type: 'heartbeat', deviceId }));
+				ws.send(
+					JSON.stringify({
+						type: 'heartbeat',
+						deviceId,
+						timestamp: Date.now()
+					})
+				);
 			}
 		}, 500);
 	}

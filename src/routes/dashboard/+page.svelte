@@ -6,6 +6,7 @@
 		id: string;
 		connectedAt: number;
 		lastSeen: number;
+		ping?: number;
 	}
 
 	let devices = $state<Device[]>([]);
@@ -165,6 +166,12 @@
 								<span class="info-label">Last seen:</span>
 								<span class="info-value">{getTimeSinceLastSeen(device.lastSeen)}</span>
 							</div>
+							<div class="info-item">
+								<span class="info-label">Ping:</span>
+								<span class="info-value" class:good-ping={device.ping !== undefined && device.ping < 50} class:medium-ping={device.ping !== undefined && device.ping >= 50 && device.ping < 100} class:bad-ping={device.ping !== undefined && device.ping >= 100}>
+									{device.ping !== undefined ? `${device.ping}ms` : '---'}
+								</span>
+							</div>
 						</div>
 					</div>
 				{/each}
@@ -318,6 +325,18 @@
 	.info-value {
 		color: #fff;
 		font-weight: bold;
+	}
+
+	.good-ping {
+		color: #4ade80 !important;
+	}
+
+	.medium-ping {
+		color: #fbbf24 !important;
+	}
+
+	.bad-ping {
+		color: #f87171 !important;
 	}
 
 	@media (max-width: 768px) {

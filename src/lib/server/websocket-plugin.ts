@@ -41,6 +41,21 @@ export function webSocketPlugin(): Plugin {
 							case 'heartbeat':
 								if (message.deviceId) {
 									connectionManager.updateHeartbeat(message.deviceId);
+
+									// Echo timestamp back for RTT measurement
+									if (message.timestamp !== undefined) {
+										try {
+											ws.send(
+												JSON.stringify({
+													type: 'heartbeat_ack',
+													deviceId: message.deviceId,
+													timestamp: message.timestamp
+												})
+											);
+										} catch (error) {
+											console.error('Error sending heartbeat ack:', error);
+										}
+									}
 								}
 								break;
 
@@ -60,6 +75,13 @@ export function webSocketPlugin(): Plugin {
 								if (message.deviceId) {
 									connectionManager.handleStrum(message.deviceId, message.intensity || 1.0);
 									console.log(`Strum detected from ${message.deviceId}`);
+								}
+								break;
+
+							case 'ping_update':
+								// Client calculated RTT from heartbeat echo and is reporting it
+								if (message.deviceId && message.ping !== undefined) {
+									connectionManager.updatePing(message.deviceId, message.ping);
 								}
 								break;
 						}

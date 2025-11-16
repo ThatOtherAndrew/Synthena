@@ -4,6 +4,7 @@ export interface Device {
 	id: string;
 	connectedAt: number;
 	lastSeen: number;
+	ping?: number; // Round-trip time in milliseconds
 }
 
 interface DeviceConnection extends Device {
@@ -60,6 +61,14 @@ class ConnectionManager {
 		}
 	}
 
+	updatePing(deviceId: string, ping: number): void {
+		const device = this.devices.get(deviceId);
+		if (device) {
+			device.ping = ping;
+			this.broadcastToDevices();
+		}
+	}
+
 	removeDevice(deviceId: string): void {
 		this.devices.delete(deviceId);
 		this.broadcastToDevices();
@@ -106,10 +115,11 @@ class ConnectionManager {
 	}
 
 	private sendDeviceList(ws: WebSocket): void {
-		const devices: Device[] = Array.from(this.devices.values()).map(({ id, connectedAt, lastSeen }) => ({
+		const devices: Device[] = Array.from(this.devices.values()).map(({ id, connectedAt, lastSeen, ping }) => ({
 			id,
 			connectedAt,
-			lastSeen
+			lastSeen,
+			ping
 		}));
 
 		try {
