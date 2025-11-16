@@ -40,7 +40,7 @@ export class MidiManager {
 
 		// Listen for new device connections
 		this.midiAccess.onstatechange = (event: MIDIConnectionEvent) => {
-			const port = event.port;
+			const port = event.port as MIDIPort;
 			if (port.type === 'input' && port.state === 'connected') {
 				(port as MIDIInput).onmidimessage = this.handleMidiMessage.bind(this);
 				console.log(`New MIDI input connected: ${port.name}`);
@@ -52,6 +52,8 @@ export class MidiManager {
 	 * Handle incoming MIDI messages (note on/off)
 	 */
 	private handleMidiMessage(event: MIDIMessageEvent): void {
+		if (!event.data || event.data.length < 3) return;
+
 		const [status, note, velocity] = event.data;
 		const command = status >> 4;
 
