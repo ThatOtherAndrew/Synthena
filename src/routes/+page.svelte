@@ -3,7 +3,6 @@
 	import Instrument from '$lib/components/Instrument.svelte';
 	import SettingsIcon from '$lib/components/SettingsIcon.svelte';
 	import { onMount } from 'svelte';
-	import gear from '$lib/assets/gear.png';
 
 	interface AccelerationData {
 		x: number | null;
@@ -337,7 +336,7 @@
 		{connected ? '●' : '○'}
 	</div>
 
-	<div class="status-id" class:connected>linux-f9nw66x</div>
+	<div class="status-id" class:connected>{deviceId}</div>
 
 	<SettingsIcon></SettingsIcon>
 
@@ -375,31 +374,6 @@
 		justify-content: center;
 		font-family: monospace;
 		font-size: 1.5rem;
-	}
-
-	.data {
-		display: flex;
-		flex-direction: column;
-		gap: 2rem;
-		text-align: center;
-	}
-
-	.axis {
-		display: flex;
-		gap: 1rem;
-		justify-content: center;
-		align-items: center;
-	}
-
-	.label {
-		font-weight: bold;
-		font-size: 2rem;
-	}
-
-	.value {
-		font-size: 2.5rem;
-		font-variant-numeric: tabular-nums;
-		min-width: 6ch;
 	}
 
 	.permission,
