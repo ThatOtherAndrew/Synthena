@@ -33,7 +33,7 @@ export class Vibraphone implements Instrument {
 		}
 	}
 
-	trigger(position: { x: number; y: number }, intensity?: number): void {
+	trigger(position: { x: number; y: number }, intensity?: number, heldNotes?: Set<number>): void {
 		if (!this.audioContext || !this.audioBuffer) {
 			console.warn('Vibraphone not initialised. Call initialise() first.');
 			return;
@@ -42,6 +42,12 @@ export class Vibraphone implements Instrument {
 		// Create audio
 		const source = this.audioContext.createBufferSource();
 		source.buffer = this.audioBuffer;
+
+		if (heldNotes && heldNotes.size > 0) {
+			const lowestNote = Math.max(...heldNotes);
+			const semitoneOffset = lowestNote - 60; // Middle C = 60
+			source.playbackRate.value = Math.pow(2, semitoneOffset / 12);
+		}
 
 		// Optional: Apply gain based on intensity
 		if (intensity !== undefined) {

@@ -9,8 +9,9 @@ export interface Instrument {
 	 * Triggers the instrument to play a sound and spawn particle effects.
 	 * @param position Screen coordinates where effect should spawn
 	 * @param intensity Optional intensity/velocity value
+	 * @param heldNotes Set of currently held MIDI note numbers
 	 */
-	trigger(position: { x: number; y: number }, intensity?: number): void;
+	trigger(position: { x: number; y: number }, intensity?: number, heldNotes?: Set<number>): void;
 
 	/**
 	 * Initialises the instrument by loading audio resources.

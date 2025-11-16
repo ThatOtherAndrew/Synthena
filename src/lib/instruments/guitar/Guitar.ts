@@ -33,7 +33,7 @@ export class Guitar implements Instrument {
 		}
 	}
 
-	trigger(position: { x: number; y: number }, intensity?: number): void {
+	trigger(position: { x: number; y: number }, intensity?: number, heldNotes?: Set<number>): void {
 		if (!this.audioContext || !this.audioBuffer) {
 			console.warn('Guitar not initialised. Call initialise() first.');
 			return;
@@ -42,6 +42,12 @@ export class Guitar implements Instrument {
 		// Create audio
 		const source = this.audioContext.createBufferSource();
 		source.buffer = this.audioBuffer;
+
+		if (heldNotes && heldNotes.size > 0) {
+			const lowestNote = Math.min(...heldNotes);
+			const semitoneOffset = lowestNote - 63; // E flat
+			source.playbackRate.value = Math.pow(2, semitoneOffset / 12);
+		}
 
 		// Optional: Apply gain based on intensity
 		if (intensity !== undefined) {

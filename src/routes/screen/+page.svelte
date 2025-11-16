@@ -6,9 +6,11 @@
 	import { Guitar } from '$lib/instruments/guitar/Guitar';
 	import { Vibraphone } from '$lib/instruments/vibraphone/Vibraphone';
 	import type { Instrument } from '$lib/instruments/Instrument';
+	import { MidiManager } from '$lib/midi/MidiManager';
 
 	let canvas: HTMLCanvasElement;
 	let connected = $state(false);
+	let heldNotes = $state<Set<number>>(new Set());
 
 	// Non-reactive variables for WebSocket and WebGL management
 	let ws: WebSocket | null = null;
@@ -18,6 +20,7 @@
 	let program: WebGLProgram | null = null;
 	let animationFrameId: number | null = null;
 	let instruments: Map<string, Instrument> = new Map();
+	let midiManager: MidiManager | null = null;
 	let lastTriggerTime = 0;
 	const TRIGGER_DEBOUNCE = 100; // Minimum 100ms between any triggers
 
@@ -189,7 +192,8 @@
 				x: Math.random() * canvas.width,
 				y: Math.random() * canvas.height
 			};
-			instrument.trigger(position);
+			// Pass current held MIDI notes to instrument
+			instrument.trigger(position, undefined, heldNotes);
 		}
 	}
 
@@ -207,6 +211,20 @@
 			instruments.set('Vibraphone', vibraphone);
 		} catch (error) {
 			console.error('Error initialising instruments:', error);
+		}
+	}
+
+	async function initialiseMidi(): Promise<void> {
+		if (!browser) return;
+
+		midiManager = new MidiManager();
+		const success = await midiManager.initialise();
+
+		if (success) {
+			// Subscribe to MIDI note changes
+			midiManager.subscribe((notes) => {
+				heldNotes = notes;
+			});
 		}
 	}
 
@@ -279,6 +297,7 @@
 		initWebGL();
 		connectWebSocket();
 		initialiseInstruments();
+		initialiseMidi();
 
 		window.addEventListener('resize', resizeCanvas);
 
@@ -307,6 +326,12 @@
 				instrument.cleanup();
 			}
 			instruments.clear();
+
+			// Cleanup MIDI manager
+			if (midiManager) {
+				midiManager.cleanup();
+				midiManager = null;
+			}
 		};
 	});
 </script>
