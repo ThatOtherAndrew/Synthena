@@ -355,11 +355,12 @@
 </script>
 
 <div class="container">
-	<div class="status" class:connected>
-		{connected ? '●' : '○'}
+	<div class="status-bar">
+		<div class="status" class:connected>
+			{connected ? '●' : '○'}
+		</div>
+		<div class="status-id" class:connected>{deviceId}</div>
 	</div>
-
-	<div class="status-id" class:connected>{deviceId}</div>
 
 	<SettingsIcon></SettingsIcon>
 
@@ -429,23 +430,29 @@
 		color: #ff6b6b;
 	}
 
-	.status {
+	.status-bar {
 		position: absolute;
 		top: 1rem;
 		left: 1rem;
-		font-size: 2rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.status {
+		font-size: 1.5rem;
 		color: #666;
 		transition: color 0.3s;
-		line-height: 16px;
+		line-height: 1;
+		display: flex;
+		align-items: center;
 	}
 
 	.status-id {
-		position: absolute;
-		top: 1.04rem;
-		left: 2.75rem;
 		font-size: 1rem;
 		color: #666;
 		transition: color 0.3s;
+		line-height: 1;
 	}
 
 	.status.connected,
