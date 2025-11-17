@@ -27,6 +27,12 @@
 	let selectedInstrument = $derived(INSTRUMENTS[currentInstrumentIndex]);
 	let cycleDirection = $state<'left' | 'right'>('right');
 
+	// Touch/swipe detection
+	let touchStartX = 0;
+	let touchStartY = 0;
+	const SWIPE_THRESHOLD = 50; // Minimum distance for swipe
+	const SWIPE_MAX_VERTICAL = 100; // Maximum vertical movement to still count as horizontal swipe
+
 	let permissionNeeded = $state(false);
 	let error = $state<string | null>(null);
 	let connected = $state(false);
@@ -38,6 +44,33 @@
 				(currentInstrumentIndex - 1 + INSTRUMENTS.length) % INSTRUMENTS.length;
 		} else {
 			currentInstrumentIndex = (currentInstrumentIndex + 1) % INSTRUMENTS.length;
+		}
+	}
+
+	// Swipe gesture handlers
+	function handleTouchStart(event: TouchEvent) {
+		touchStartX = event.touches[0].clientX;
+		touchStartY = event.touches[0].clientY;
+	}
+
+	function handleTouchEnd(event: TouchEvent) {
+		if (!event.changedTouches.length) return;
+
+		const touchEndX = event.changedTouches[0].clientX;
+		const touchEndY = event.changedTouches[0].clientY;
+
+		const deltaX = touchEndX - touchStartX;
+		const deltaY = touchEndY - touchStartY;
+
+		// Check if this is a horizontal swipe (more horizontal than vertical movement)
+		if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_MAX_VERTICAL) {
+			if (deltaX > 0) {
+				// Swipe right - go to previous instrument
+				cycleInstrument('left');
+			} else {
+				// Swipe left - go to next instrument
+				cycleInstrument('right');
+			}
 		}
 	}
 
@@ -222,6 +255,10 @@
 			error = 'DeviceMotion API not supported';
 		}
 
+		// Add swipe gesture listeners
+		window.addEventListener('touchstart', handleTouchStart, { passive: true });
+		window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
 		// Cleanup function
 		return () => {
 			isCleaningUp = true;
@@ -245,6 +282,10 @@
 				wakeLock.release();
 				wakeLock = null;
 			}
+
+			// Remove swipe gesture listeners
+			window.removeEventListener('touchstart', handleTouchStart);
+			window.removeEventListener('touchend', handleTouchEnd);
 		};
 	});
 
